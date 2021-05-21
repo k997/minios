@@ -7,6 +7,12 @@ SECTION MBR vstart=0x7c00
     mov fs,ax
     ;设置栈
     mov sp,0x7c00
+
+    ; 设置显存起始地址
+    ; 不能直接写入gs，通过ax操作
+    mov ax,0xb800
+    mov gs,ax
+    
     ;清屏
     mov ax, 0x0600
     mov bx, 0x0700
@@ -14,23 +20,13 @@ SECTION MBR vstart=0x7c00
     mov dx, 0x18f4
     int 0x10
 
-    ; 获取光标位置
-    mov ah,3 ;功能号
-    mov bh,0 ;bh 第0页
-    int 0x10
-
-    mov ax,message
-    mov bp,ax
-    ; cx 为message字符串长度
-    mov cx,12
-
-
-
-    ;在光标位置处打印
-    mov ax,0x1301
-    mov bx,0x0002
-    int 0x10
+    ; 显存位置写入字符串
+    ; 每个字符占2字节，低字节为ASCII码，高字节为属性
     
+    mov byte [gs:0x00],'m'
+    mov byte [gs:0x01],0xA4 ; A 表示绿色背景闪烁，4 表示前景色为红色
+    mov byte [gs:0x02],'b'
+    mov byte [gs:0x04],'r'
     jmp $
 
     message db "hello,loader"
