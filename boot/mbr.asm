@@ -1,7 +1,16 @@
 %include "boot_conf.asm"
+<<<<<<< HEAD
 ; include "read_disk.asm" 写在section 上面导致0和0x55aa没有正确被填充
 ; 且read_disk.asm写在开头会直接被执行，此时eax\cx等寄存器还未准备好 ，read_disk陷入死循环
 ; boot_conf.asm 中都是伪指令，所以没问题
+=======
+<<<<<<< HEAD
+; include "read_disk.asm" 写在section 上面导致0和0x55aa没有正确被填充
+; 且read_disk.asm写在开头会直接被执行，此时eax\cx等寄存器还未准备好 ，read_disk陷入死循环
+; boot_conf.asm 中都是伪指令，所以没问题
+=======
+>>>>>>> 771ecea (完成简易loader，从磁盘读取loader并执行)
+>>>>>>> 53dde4c (完成简易loader，从磁盘读取loader并执行)
 SECTION MBR vstart=0x7c00
 
 
@@ -14,18 +23,32 @@ SECTION MBR vstart=0x7c00
     ;设置栈
     mov sp,0x7c00
 
-    ; 设置显存起始地址
-    ; 不能直接写入gs，通过ax操作
+    ; 通过gs寄存器设置显存起始地址
+    ; 但无法直接将立即数写入gs，因此通过ax操作
     ; 显存地址为0xb8000
-    ; 实模式下访问的方式为 段基址:段内偏移，0xb800*16为0xb8000
+    ; 实模式下地址访问的方式为 段基址:段内偏移，
+    ; 0xb800*16=0xb8000，因此将0xb800写入gs
     mov ax,0xb800
     mov gs,ax
+<<<<<<< HEAD
     
     ; ;清屏
+<<<<<<< HEAD
+=======
+=======
+
+    ;INT 0x10 功能号:0x06 功能描述:上卷窗口
+    ;AH 功能号= 0x06 
+    ;AL = 上卷的行数(如果为 0,表示全部)
+    ;BH = 上卷行属性
+>>>>>>> 771ecea (完成简易loader，从磁盘读取loader并执行)
+>>>>>>> 53dde4c (完成简易loader，从磁盘读取loader并执行)
     mov ax, 0x0600
     mov bx, 0x0700
-    mov cx, 0
-    mov dx, 0x18f4
+    mov cx, 0 		; 左上角: (0, 0)
+    mov dx, 0x18f4	; 右下角: (80,25)
+                    ; VGA 文本模式中,一行只能容纳 80 个字符,共 25 行
+                    ; 下标从 0 开始,所以 0x18=24,0x4f=79 
     int 0x10
 
     ; 显存位置写入字符串
@@ -45,10 +68,14 @@ SECTION MBR vstart=0x7c00
 
     jmp LOADER_BASE_ADDR
 
-; include "read_disk.asm" 写在section 上面导致后面的0和0x55aa没有正确被填充
-; 且read_disk.asm写在开头会直接被执行，此时eax\cx等寄存器还未准备好
+; include "read_disk.asm" 写在section 上面导致0和0x55aa没有正确被填充
+; 且read_disk.asm写在开头会直接被执行，此时eax\cx等寄存器还未准备好 ，read_disk陷入死循环
 ; boot_conf.asm 中都是伪指令，所以没问题
 %include "read_disk.asm" 
+	; $和$$表示当前行和本section 的地址
+	; 用0填充第一个扇区
+
     times 510-($-$$) db 0
+    ; 魔数0x55aa，表示该扇区存在引导程序（MBR）
     db 0x55,0xaa
 
