@@ -1,19 +1,5 @@
 %include "boot_conf.asm"
-<<<<<<< HEAD
-; include "read_disk.asm" 写在section 上面导致0和0x55aa没有正确被填充
-; 且read_disk.asm写在开头会直接被执行，此时eax\cx等寄存器还未准备好 ，read_disk陷入死循环
-; boot_conf.asm 中都是伪指令，所以没问题
-=======
-<<<<<<< HEAD
-; include "read_disk.asm" 写在section 上面导致0和0x55aa没有正确被填充
-; 且read_disk.asm写在开头会直接被执行，此时eax\cx等寄存器还未准备好 ，read_disk陷入死循环
-; boot_conf.asm 中都是伪指令，所以没问题
-=======
->>>>>>> 771ecea (完成简易loader，从磁盘读取loader并执行)
->>>>>>> 53dde4c (完成简易loader，从磁盘读取loader并执行)
 SECTION MBR vstart=0x7c00
-
-
     ;初始化
     xor ax,ax
     mov ds,ax
@@ -30,19 +16,12 @@ SECTION MBR vstart=0x7c00
     ; 0xb800*16=0xb8000，因此将0xb800写入gs
     mov ax,0xb800
     mov gs,ax
-<<<<<<< HEAD
     
     ; ;清屏
-<<<<<<< HEAD
-=======
-=======
-
     ;INT 0x10 功能号:0x06 功能描述:上卷窗口
     ;AH 功能号= 0x06 
     ;AL = 上卷的行数(如果为 0,表示全部)
     ;BH = 上卷行属性
->>>>>>> 771ecea (完成简易loader，从磁盘读取loader并执行)
->>>>>>> 53dde4c (完成简易loader，从磁盘读取loader并执行)
     mov ax, 0x0600
     mov bx, 0x0700
     mov cx, 0 		; 左上角: (0, 0)
