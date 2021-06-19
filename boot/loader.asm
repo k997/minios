@@ -3,11 +3,15 @@ SECTION LOADER  vstart=LOADER_BASE_ADDR
 ; 用于初始化栈，LOADER_BASE_ADDR以上为loader，以下为栈
 LOADER_STACK_TOP equ LOADER_BASE_ADDR
 
-jmp loader_start
 
+jmp loader_start
+%include "memory.asm"
 %include "gdt.asm"
 
 loader_start:
+
+
+; -----------------打印字符串 ----------------
     mov ax,0xb800
     mov gs,ax
     
@@ -25,6 +29,11 @@ loader_start:
     mov byte [gs:0x06],'d'
     mov byte [gs:0x08],'e'
     mov byte [gs:0x10],'r'
+
+;  -----------------获取内存容量----------------
+
+%include "get_memory.asm"
+
 
 ;----------------- 打开 A20 ----------------
     in al,0x92
