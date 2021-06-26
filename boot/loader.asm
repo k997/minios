@@ -7,7 +7,6 @@ LOADER_STACK_TOP equ LOADER_BASE_ADDR
 jmp loader_start
 %include "memory.asm"
 %include "gdt.asm"
-
 loader_start:
 
 
@@ -53,6 +52,8 @@ loader_start:
     jmp dword SELECTOR_CODE:p_mode_start 
 
 [bits 32]
+; 只能运行在32位环境下
+%include "paging.asm"
 p_mode_start:
     mov ax,SELECTOR_DATA
     mov ds,ax
@@ -63,4 +64,42 @@ p_mode_start:
     mov gs,ax
 
     mov byte [gs:0x120],'P'
+    
+; 分页
+    ; 设置页表
+    call setup_page 
+
+    ; 将gdtr内容存储到原来 gdt 的位置，随后存放到内核地址空间
+    sgdt [GDT_PTR]  
+
+    ; 修改显存段描述符地址到内核空间
+    mov ebx,[GDT_PTR+2] ;ebx为gdt基址， gdtr 前2字节为段界限，其后4字节为gdt基址
+    ; 修改显存段24-31位地址
+    ; + 0x18=24 ：显存段为第3个段描述符，每个段描述符8字节
+    ; + 4       ：段的24-31位地址位于段描述符高4字节
+    or  dword [ebx + 0x18 + 4],0xc0000000   
+    ; 修改显存段0-23位地址
+    add dword [GDT_PTR+2], 0xc0000000   ;将gdt的基址加上0xc0000000使其成为内核所在的高地址
+
+    ; 将栈指针映射到内核地址
+    add esp,0xc0000000  
+
+    ; 将页目录表地址赋值给cr3
+    mov eax, PAGE_DIR_TABLE_POS
+    mov cr3, eax
+
+    ; 打开 cr0 的 pg 位（第 31 位）
+    mov eax,cr0
+    or  eax,0x80000000
+    mov cr0,eax
+
+    ; 分页后重新加载gdt 
+    lgdt [GDT_PTR]
+
+    mov byte [gs:160],'V'
     jmp $
+
+
+
+
+
