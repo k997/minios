@@ -99,9 +99,13 @@ p_mode_start:
     lgdt [GDT_PTR]
 
     mov byte [gs:160],'V'
-    jmp $
+
+    ; 跳转到内核
+    call kernel_init
+    mov esp, 0xc009f00
+    jmp KERNEL_ENTRY_POINT ; 定义在kernel_init中
 
 
-
+%include "kernel_init.asm"
 
 
