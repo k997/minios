@@ -22,17 +22,18 @@ loader_start:
     int 0x10
 
     ; 输出loader
-    mov byte [gs:0x00],'l' ; byte代表写入一字节
-    mov byte [gs:0x02],'o' ; 注意地址，每个字符占2字节
-    mov byte [gs:0x04],'a'
-    mov byte [gs:0x06],'d'
-    mov byte [gs:0x08],'e'
-    mov byte [gs:0x10],'r'
+    mov byte [gs:00],'l' ; byte代表写入一字节
+    mov byte [gs:02],'o' ; 注意地址，每个字符占2字节
+    mov byte [gs:04],'a'
+    mov byte [gs:06],'d'
+    mov byte [gs:08],'e'
+    mov byte [gs:10],'r'
 
 ;  -----------------获取内存容量----------------
 
 %include "get_memory.asm"
 
+;  -----------------开启分页模式----------------
 
 ;----------------- 打开 A20 ----------------
     in al,0x92
@@ -53,7 +54,7 @@ loader_start:
 
 [bits 32]
 ; 只能运行在32位环境下
-%include "paging.asm"
+
 p_mode_start:
     mov ax,SELECTOR_DATA
     mov ds,ax
@@ -63,7 +64,7 @@ p_mode_start:
     mov ax,SELECTOR_VIDEO
     mov gs,ax
 
-    mov byte [gs:0x120],'P'
+    mov byte [gs:160],'P'
     
 ; 分页
     ; 设置页表
@@ -99,13 +100,17 @@ p_mode_start:
     lgdt [GDT_PTR]
 
     mov byte [gs:160],'V'
+	; 磁盘读取带elf头的内核文件到内存
+    mov eax,KERNEL_START_SECTOR ; 内核在磁盘内起始扇区的 lba 地址
+    mov ebx,KERNEL_BIN_BASE_ADDR  ; 载入的内存地址
+    mov ecx,200 ; 待读入的扇区数
+    call read_disk_m_32
 
     ; 跳转到内核
     call kernel_init
-    mov esp, 0xc009f00
+    mov esp, 0xc009f000
     jmp KERNEL_ENTRY_POINT ; 定义在kernel_init中
 
-
+%include "paging.asm"
 %include "kernel_init.asm"
-
-
+%include "read_disk.asm"

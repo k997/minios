@@ -1,6 +1,12 @@
 PT_NULL equ 0
+
+; 内核起始地址
 KERNEL_ENTRY_POINT equ  0xc0001500
+; 暂存从硬盘加载带ELF的内核二进制文件时的内存地址
 KERNEL_BIN_BASE_ADDR equ 0x70000
+; 内核在硬盘中的扇区
+KERNEL_START_SECTOR equ 0x9
+
 kernel_init:
 	xor eax,eax
 	xor ebx,ebx
@@ -40,6 +46,7 @@ kernel_init:
     ret
 
 mem_cpy:
+; mem_cpy（dst，src，size）
     cld ; clean direction，将 eflags 寄存器中的方向标志位 DF 置为 0
         ; rep 配合[e]si 和[e]di搬运字符时，源地址和目的地址逐渐增大
 
@@ -50,8 +57,8 @@ mem_cpy:
     push ecx    ;  loop .each_segment使用cx
 ; 自左向右取出参数
     mov edi,[ ebp + 8  ]    ; dst
-    mov esi,[ ebp + 16 ]    ; src
-    mov ecx,[ ebp + 24 ]    ; size
+    mov esi,[ ebp + 12 ]    ; src
+    mov ecx,[ ebp + 16 ]    ; size
     rep movsb               ; ecx为0则rep停止
                             ; movsb: [e]si和[e]di 自动加 1, 即逐字节复制
 
