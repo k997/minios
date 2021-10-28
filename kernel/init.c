@@ -5,8 +5,11 @@
 void init_all() {
   put_str("init all\n");
 
-  //初始化中断
-  put_str("idt init\n");
-  idt_init();
+  
+  put_str("interrupt init\n");
+  pic_init();      //初始化可编程中断控制器
+  interrupt_program_init();//设置中断处理例程
+  idt_init();      // 初始化中断描述符表
+  put_str("interrupt init done\n");
   
 }

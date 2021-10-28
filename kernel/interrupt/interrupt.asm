@@ -6,12 +6,12 @@
 %define ZERO push 0     
                         
 
-extern put_str
+extern interrupt_program_table
 
 section .data
 int_str db  "interrupt occur!", 0xa, 0
 
-global interrupt_entry_table ; 定义中断数组
+global interrupt_entry_table ; 定义中断处理程序入口数组
 interrupt_entry_table:
 
 ; 宏名称为 VECTOR 参数个数为2
@@ -21,9 +21,13 @@ section .text
 int_%1_entry:   ; 此处 %1 被替换为为宏的第一个参数，即中断向量号
 
     %2          ; 空指令或压入中断错误码
-    push int_str; 打印字符串
-    call put_str
-    add  esp,4
+    
+    ; 保存上下文环境
+    push ds
+    push es
+    push fs
+    push gs
+    pushad
 
     mov  al,0x20; 8259A 设置为手动结束中断，所以此处发送中断结束命令 EOI
                 ; OCW2 中第 5 位是 EOI 位，此位为 1，其余位全为 0，所以是 0x20
@@ -31,14 +35,30 @@ int_%1_entry:   ; 此处 %1 被替换为为宏的第一个参数，即中断向�
     out  0xa0,al; 向从片发送 EOI
     out  0x20,al; 向主片发送 EOI
 
-    add  esp,4
-    iret
+    push %1     ;不管 interrupt_program_table 中的目标程序是否需要参数
+                ;都一律压入中断向量号，方便调试
+    call [interrupt_program_table + %1 * 5]   ; 调用 interrupt_program_table 中的 C 版本中断处理函数
+                                ; 中断处理函数 4 字节，处理函数名称char* name占 1 字节
+    jmp interrupt_exit
 
 section .data           
     dd  int_%1_entry    ; 存储各个中断入口程序的地址
                         ; 形成 intr_entry_table 数组
                         ; 编译器会将属性相同的 section 合并到同一个大的 segment 中
 %endmacro
+
+section .text
+global interrupt_exit
+interrupt_exit:
+    add esp, 4 ; 跳过中断向量号
+    popad
+    pop gs
+    pop fs
+    pop es
+    pop ds
+    add esp,4 ; 跳过 error_code
+    iretd
+
 
 ; python print(f"VECTOR { hex(i) },ZERO")
 VECTOR 0x0,ZERO

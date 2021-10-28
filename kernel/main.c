@@ -21,7 +21,7 @@ void main(void) {
   put_char('\n');
 
   init_all();
-  asm volatile("sti");
+  asm volatile("sti");//临时开中断
   while (1)
     ;
 }
