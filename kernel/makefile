@@ -1,12 +1,30 @@
 
 
-all: $(BUILD_DIR)/init.o $(BUILD_DIR)/main.o
+SRC_DIRS := .
+SRCS := $(shell find $(SRC_DIRS)  -name '*.c' -or -name '*.asm')
+OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
+DEPS := $(OBJS:.o=.d)
 
-$(BUILD_DIR)/init.o:init.c  $(C_LIB)/kernel/print.h \
-			$(C_LIB)/kernel/init.h $(C_LIB)/kernel/interrupt.h 
 
+ENTRY_POINT = 0xc0001500
+# -c 只编译不链接，否则报错，-fno-builtin不适用c语言内置函数
+CFLAGS =  -m32 -fno-builtin -fno-stack-protector  -c -MMD -MP
+LDFLAGS = -m elf_i386 -Ttext $(ENTRY_POINT) -e main
+ASFLAGS = -f elf32
+
+C_INCLUDE = -I $(TOP_DIR)/lib -I $(TOP_DIR)/lib/kernel
+
+all: $(BUILD_DIR)/kernel.bin
+
+$(BUILD_DIR)/%.c.o: %.c
+	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(C_INCLUDE) -o $@  $<
 
-$(BUILD_DIR)/main.o:main.c $(C_LIB)/kernel/print.h \
-			$(C_LIB)/kernel/init.h
-	$(CC) $(CFLAGS) $(C_INCLUDE) -o $@  $<
+$(BUILD_DIR)/%.asm.o: %.asm
+	mkdir -p $(dir $@)
+	$(AS) $(ASFLAGS) -o $@ $<
+
+$(BUILD_DIR)/kernel.bin: $(OBJS)
+	$(LD) $(LDFLAGS) $^ -o $@
+
+-include $(DEPS)
