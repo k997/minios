@@ -1,6 +1,6 @@
 #include "init.h"
 #include "print.h"
-
+#include "interrupt.h"
 void main(void) {
   put_char('K');
   put_char('E');
@@ -13,15 +13,23 @@ void main(void) {
   put_char('\n');
   put_str("kernel string edition");
   put_char('\n');
-  put_int(0x12345678);
-  put_char('\n');
-  put_int(123456789);
-  put_char('\n');
-  put_int(0x00000001);
-  put_char('\n');
 
   init_all();
-  asm volatile("sti");//临时开中断
+  put_str("get interrupt status\n");
+  put_int(interrupt_get_status());
+  put_char('\n');
+
+  put_str("enable interrupt\n");
+  interrupt_set_status(INTR_ON);
+  // 等待一段时间，
+  uint32_t i = 0xFFFFF;
+  while (i--)
+    ;
+
+  put_str("disable interrupt\n");
+  interrupt_set_status(INTR_OFF);
+  put_int(interrupt_get_status());
+  put_char('\n');
   while (1)
     ;
 }
