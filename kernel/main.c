@@ -1,6 +1,10 @@
 #include "init.h"
 #include "print.h"
 #include "interrupt.h"
+#include "debug.h"
+
+
+
 void main(void) {
   put_char('K');
   put_char('E');
@@ -30,6 +34,8 @@ void main(void) {
   interrupt_set_status(INTR_OFF);
   put_int(interrupt_get_status());
   put_char('\n');
+
+  ASSERT(1==2);
   while (1)
     ;
 }
