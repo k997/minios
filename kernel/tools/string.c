@@ -1,7 +1,7 @@
 #include "string.h"
 #include "debug.h"
 #include "global.h"
-#include "print.h"
+
 void memset(void *_dst, uint8_t value, uint32_t size)
 {
     ASSERT(_dst != NULL);
