@@ -9,8 +9,6 @@
 extern interrupt_program_table
 
 section .data
-int_str db  "interrupt occur!", 0xa, 0
-
 global interrupt_entry_table ; 定义中断处理程序入口数组
 interrupt_entry_table:
 
@@ -37,8 +35,9 @@ int_%1_entry:   ; 此处 %1 被替换为为宏的第一个参数，即中断向�
 
     push %1     ;不管 interrupt_program_table 中的目标程序是否需要参数
                 ;都一律压入中断向量号，方便调试
-    call [interrupt_program_table + %1 * 5]   ; 调用 interrupt_program_table 中的 C 版本中断处理函数
-                                ; 中断处理函数 4 字节，处理函数名称char* name占 1 字节
+    call [interrupt_program_table + %1 * 8 ]    ; 调用 interrupt_program_table 中的 C 版本中断处理函数
+                                                ; 32 位模式下所有指针均占 4 字节
+                                                ; 中断处理函数void* 4 字节，处理函数名称char* 占 4 字节
     jmp interrupt_exit
 
 section .data           
@@ -61,36 +60,36 @@ interrupt_exit:
 
 
 ; python print(f"VECTOR { hex(i) },ZERO")
-VECTOR 0x0,ZERO
-VECTOR 0x1,ZERO
-VECTOR 0x2,ZERO
-VECTOR 0x3,ZERO
-VECTOR 0x4,ZERO
-VECTOR 0x5,ZERO
-VECTOR 0x6,ZERO
-VECTOR 0x7,ZERO
-VECTOR 0x8,ZERO
-VECTOR 0x9,ZERO
-VECTOR 0xa,ZERO
-VECTOR 0xb,ZERO
-VECTOR 0xc,ZERO
-VECTOR 0xd,ZERO
-VECTOR 0xe,ZERO
-VECTOR 0xf,ZERO
+VECTOR 0x00,ZERO
+VECTOR 0x01,ZERO
+VECTOR 0x02,ZERO
+VECTOR 0x03,ZERO 
+VECTOR 0x04,ZERO
+VECTOR 0x05,ZERO
+VECTOR 0x06,ZERO
+VECTOR 0x07,ZERO 
+VECTOR 0x08,ERROR_CODE
+VECTOR 0x09,ZERO
+VECTOR 0x0a,ERROR_CODE
+VECTOR 0x0b,ERROR_CODE 
+VECTOR 0x0c,ZERO
+VECTOR 0x0d,ERROR_CODE
+VECTOR 0x0e,ERROR_CODE
+VECTOR 0x0f,ZERO 
 VECTOR 0x10,ZERO
-VECTOR 0x11,ZERO
+VECTOR 0x11,ERROR_CODE
 VECTOR 0x12,ZERO
-VECTOR 0x13,ZERO
+VECTOR 0x13,ZERO 
 VECTOR 0x14,ZERO
 VECTOR 0x15,ZERO
 VECTOR 0x16,ZERO
-VECTOR 0x17,ZERO
-VECTOR 0x18,ZERO
+VECTOR 0x17,ZERO 
+VECTOR 0x18,ERROR_CODE
 VECTOR 0x19,ZERO
-VECTOR 0x1a,ZERO
-VECTOR 0x1b,ZERO
+VECTOR 0x1a,ERROR_CODE
+VECTOR 0x1b,ERROR_CODE 
 VECTOR 0x1c,ZERO
-VECTOR 0x1d,ZERO
+VECTOR 0x1d,ERROR_CODE
 VECTOR 0x1e,ERROR_CODE
-VECTOR 0x1f,ZERO
-VECTOR 0x20,ZERO
+VECTOR 0x1f,ZERO 
+VECTOR 0x20,ZERO	;时钟中断对应的入口

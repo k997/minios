@@ -2,7 +2,6 @@
 #include "global.h"
 #include "stdint.h"
 
-
 // 中断门描述符
 struct gate_desc
 {
@@ -27,7 +26,6 @@ void idt_init()
 {
   idt_desc_init(); //初始化中断描述符
 
-
   // lidt 操作数前 16 位是界限 limit，后 32 位是基址
   uint16_t idt_limit = sizeof(idt) - 1;
   // 32 位地址经过左移操作后，高位将被丢弃
@@ -48,10 +46,10 @@ static void make_idt_desc(struct gate_desc *gd, uint8_t attr,
 {
   gd->func_off_low_word = (uint32_t)handler & 0x0000FFFF;
   gd->selector = SELECTOR_K_CODE;
+  gd->dcount = 0;
   gd->attr = attr;
   gd->func_off_high_word = ((uint32_t)handler & 0xFFFF0000) >> 16;
 }
-
 
 // 初始化中断描述符表
 static void idt_desc_init(void)

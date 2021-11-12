@@ -40,7 +40,7 @@ clean:
 
 all: mk_dir build hd
 
-	
+rebuild: clean all
 
 
 

@@ -5,6 +5,8 @@ SRCS := $(shell find $(SRC_DIRS)  -name '*.c' -or -name '*.asm')
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
 
+MAIN_OBJ := $(filter %main.c.o,$(OBJS))
+LD_OBJS := $(filter-out $(MAIN_OBJ),$(OBJS))
 
 ENTRY_POINT = 0xc0001500
 # -c 只编译不链接，否则报错，-fno-builtin不适用c语言内置函数
@@ -25,6 +27,6 @@ $(BUILD_DIR)/%.asm.o: %.asm
 	$(AS) $(ASFLAGS) -o $@ $<
 
 $(BUILD_DIR)/kernel.bin: $(OBJS)
-	$(LD) $(LDFLAGS) $^ -o $@
+	$(LD) $(LDFLAGS) $(MAIN_OBJ) $(LD_OBJS) -o $@
 
 -include $(DEPS)
