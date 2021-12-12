@@ -10,7 +10,7 @@ void bitmap_init(bitmap *btmp)
     memset(btmp->bits, 0, btmp->byte_length);
 }
 
-// 分配连续 count 个 bit， 并返回起始位置
+// 分配连续 count 个 bit， 并返回起始位置, 失败则返回 -1
 int bitmap_alloc(bitmap *btmp, uint32_t count)
 {
     int start_index = bitmap_scan(btmp, count);
