@@ -5,25 +5,16 @@
 #include "string.h"
 #include "global.h"
 #include "bitmap.h"
+#include "memory.h"
 
 void main(void)
 {
-  bitmap btmp;
-  btmp.bits=(void*)(0xc009a000);
-  btmp.byte_length = 1;
-  bitmap_init(&btmp);
-  put_int(btmp.bits[0]);
-  put_str("\naddr bits:");
-  put_int((uint32_t)btmp.bits);
+  init_all();
+
+  void *addr = kernel_page_alloc(3);
+  put_str("\nkernel_page start vaddr is ");
+  put_int((uint32_t)addr);
   put_str("\n");
-  bitmap_alloc(&btmp,3);
-  put_int(btmp.bits[0]);
-  put_str("\n");
-  bitmap_alloc(&btmp,2);
-  put_int(btmp.bits[0]);
-  put_str("\n");
-  bitmap_free(&btmp,3,2);
-  put_int(btmp.bits[0]);
   while (1)
     ;
 }

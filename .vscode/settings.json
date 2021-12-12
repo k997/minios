@@ -6,6 +6,8 @@
         "string.h": "c",
         "debug.h": "c",
         "chrono": "c",
-        "variant": "c"
+        "variant": "c",
+        "memory.h": "c",
+        "random": "c"
     }
 }

@@ -11,7 +11,7 @@ LD_OBJS := $(filter-out $(MAIN_OBJ),$(OBJS))
 ENTRY_POINT = 0xc0001500
 # -c 只编译不链接，否则报错，-fno-builtin不适用c语言内置函数
 CFLAGS =  -m32 -fno-builtin -fno-stack-protector  -c -MMD -MP
-LDFLAGS = -m elf_i386 -Ttext $(ENTRY_POINT) -e main
+LDFLAGS = -m32 -fno-builtin -nostdlib -Ttext $(ENTRY_POINT) -e main  -Wl,-Map=$(BUILD_DIR)/kernel.map
 ASFLAGS = -f elf32
 
 C_INCLUDE = -I $(TOP_DIR)/lib -I $(TOP_DIR)/lib/kernel
@@ -27,6 +27,6 @@ $(BUILD_DIR)/%.asm.o: %.asm
 	$(AS) $(ASFLAGS) -o $@ $<
 
 $(BUILD_DIR)/kernel.bin: $(OBJS)
-	$(LD) $(LDFLAGS) $(MAIN_OBJ) $(LD_OBJS) -o $@
+	$(CC) $(LDFLAGS) $(MAIN_OBJ) $(LD_OBJS) -o $@
 
 -include $(DEPS)
