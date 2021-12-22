@@ -8,6 +8,8 @@
         "chrono": "c",
         "variant": "c",
         "memory.h": "c",
-        "random": "c"
+        "random": "c",
+        "list": "c",
+        "functional": "c"
     }
 }
