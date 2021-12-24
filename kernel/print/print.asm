@@ -204,12 +204,35 @@ put_char:
 	mov dx,0x03d4 ; 索引寄存器
 	mov al,0x0f
 	out dx,al
-	mov dx,0x03d5 ; 高8位写入数据寄存器
+	mov dx,0x03d5 ; 低8位写入数据寄存器
 	mov al,bl
 	out dx,al
 ;8 打印结束
 	popad
 	ret 
+
+
+global set_cursor
+set_cursor:
+	pushad
+	mov bx,[esp+36] ; 获取光标参数, pushad 4 * 8 = 32,返回值 4，32 + 4 = 36
+	; 高8位
+	mov dx,0x03d4 ; 设置索引寄存器
+	mov al,0x0e
+	out dx,al
+	mov dx,0x03d5 ; 高8位写入数据寄存器
+	mov al,bh
+	out dx,al
+	; 低8位
+	mov dx,0x03d4 ; 索引寄存器
+	mov al,0x0f
+	out dx,al
+	mov dx,0x03d5 ; 设置低8位写入数据寄存器
+	mov al,bl
+	out dx,al
+
+	popad
+	ret
 
 
 
