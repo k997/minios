@@ -2,10 +2,9 @@
 C 语言编写中断处理程序，汇编语言负责处理中断上下文
 */
 
-#include "stdint.h"
 #include "print.h"
 #include "interrupt.h"
-
+#include "string.h"
 struct interrupt_program
 {
     interrupt_handler handler;
@@ -48,6 +47,12 @@ void interrupt_program_init(void)
     interrupt_program_table[19].name = "#XF SIMD Floating-Point Exception";
 }
 
+// 注册中断处理程序
+void interrupt_program_register(uint8_t ver_nr, char *name, interrupt_handler handler)
+{
+    strcpy(interrupt_program_table[ver_nr].name, name);
+    interrupt_program_table[ver_nr].handler = handler;
+}
 static void general_interrupt_handler(uint8_t ver_nr)
 {
     //IRQ7 和 IRQ15 会产生伪中断，无需处理
@@ -57,7 +62,23 @@ static void general_interrupt_handler(uint8_t ver_nr)
     {
         return;
     }
-    put_str("int vector: 0x");
+    put_str("\nint vector: 0x");
     put_int(ver_nr);
     put_char('\n');
+
+    // 若为 Pagefault，打印缺失的地址
+    // Pagefault 时缺失地址暂存在 cr2 寄存器
+    if (ver_nr == 14)
+    {
+        int32_t page_fault_vaddr = 0;
+        asm("movl %%cr2,%0"
+            : "=r"(page_fault_vaddr));
+        put_str("page fault addr is: ");
+        put_int(page_fault_vaddr);
+        put_str("\n");
+    }
+    // 能进入中断处理程序就表示已经处在关中断情况下
+    // 不会出现调度进程的情况。故下面的循环不会再被中断
+    while (1)
+        ;
 }
