@@ -19,7 +19,7 @@ void thread_init(void)
     list_init(&thread_ready_list);
     list_init(&thread_all_list);
     // main 线程的 PCB 空间已在 0xc009e000 提前分配好，无需再次分配空间, 且此时其已经是运行状态，因此单独为 main 线程创建 PCB
-    make_main_thread("main",31);
+    make_main_thread("main", 31);
 }
 
 task_struct *thread_create(char *name, int priority, thread_func func, void *func_args)
@@ -101,6 +101,33 @@ static void thread_kstack(task_struct *thread, thread_func func, void *func_args
     kthread_stack->eip = kernel_thread;
     kthread_stack->function = func;
     kthread_stack->func_args = func_args;
+}
+
+void thread_block(task_status stat)
+{
+    // 只有以下三种状态可以使线程不被调度
+    ASSERT((stat == TASK_BLOCKED) || (stat == TASK_WAITING) || (stat == TASK_HANGING));
+    interrupt_status old_status = interrupt_disable();
+    task_struct *current_thread = thread_running();
+    current_thread->status = stat;
+    // 将当前线程换下处理器
+    thread_schedule();
+    interrupt_set_status(old_status);
+}
+
+void thread_unblock(task_struct *pthread)
+{
+    interrupt_status old_status = interrupt_disable();
+    // 断言仅开启调试模式启用
+    ASSERT((pthread->status == TASK_BLOCKED) || (pthread->status == TASK_WAITING) || (pthread->status == TASK_HANGING));
+    if (pthread->status != TASK_READY)
+    {
+        ASSERT(!list_find_elem(&thread_ready_list, &pthread->thread_status_list_tag));
+        // 放入就绪队列最前，使其尽快被调度
+        list_push(&thread_ready_list, &pthread->thread_status_list_tag);
+        pthread->status = TASK_READY;
+    }
+    interrupt_set_status(old_status);
 }
 
 static void kernel_thread(thread_func *func, void *func_args)

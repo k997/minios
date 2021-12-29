@@ -108,4 +108,8 @@ task_struct *thread_create(char *name, int priority, thread_func func, void *fun
 void thread_schedule(void);
 // 获取正在运行的线程
 task_struct *thread_running(void);
+// 阻塞当前线程
+void thread_block(task_status stat);
+// 解除指定线程阻塞状态
+void thread_unblock(task_struct *pthread);
 #endif
