@@ -4,7 +4,7 @@
 #include "memory.h"
 #include "timer.h"
 #include "thread.h"
-
+#include "gdt.h"
 void init_all()
 {
   put_str("init all\n");
@@ -26,4 +26,8 @@ void init_all()
   put_str("thread module init\n");
   thread_init();
   put_str("thread module init done\n");
+
+  put_str("tss init\n");
+  gdt_init();
+  put_str("tss init done\n");
 }

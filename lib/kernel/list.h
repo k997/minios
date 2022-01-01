@@ -1,7 +1,7 @@
 #ifndef __LIB_LIST_H
 #define __LIB_LIST_H
 
-#include "global.h"
+#include "stdint.h"
 
 // 结构体成员的相对于结构体地址偏移
 #define offsetof(struct_type, struct_member) (int)(&(((struct_type *)0)->struct_member))

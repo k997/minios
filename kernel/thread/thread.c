@@ -1,7 +1,6 @@
 #include "thread.h"
 #include "stdint.h"
 #include "string.h"
-#include "global.h"
 #include "memory.h"
 #include "interrupt.h"
 #include "debug.h"

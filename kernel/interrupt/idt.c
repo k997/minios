@@ -1,6 +1,7 @@
 #include "interrupt.h"
 #include "global.h"
 #include "stdint.h"
+#include "idt.h"
 
 // 中断门描述符
 struct gate_desc
