@@ -1,5 +1,5 @@
-#ifndef __LIB_STRING_H
-#define __LIB_STRING_H
+#ifndef __LIB_KERNEL_STRING_H
+#define __LIB_KERNEL_STRING_H
 #include "stdint.h"
 
 void memset(void *_dst, uint8_t value, uint32_t size);

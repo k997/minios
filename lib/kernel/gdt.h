@@ -1,5 +1,5 @@
-#ifndef __KERNEL_GDT_H
-#define __KERNEL_GDT_H
+#ifndef __LIB_KERNEL_GDT_H
+#define __LIB_KERNEL_GDT_H
 #include "stdint.h"
 #include "thread.h"
 

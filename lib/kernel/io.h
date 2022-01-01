@@ -1,5 +1,5 @@
-#ifndef __LIB_IO_H
-#define __LIB_IO_H
+#ifndef __LIB_KERNEL_IO_H
+#define __LIB_KERNEL_IO_H
 
 /*
     为了提高运行速度，直接将与io端口相关的操作写入头文件

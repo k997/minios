@@ -10,6 +10,7 @@
         "memory.h": "c",
         "random": "c",
         "list": "c",
-        "functional": "c"
+        "functional": "c",
+        "stdint.h": "c"
     }
 }

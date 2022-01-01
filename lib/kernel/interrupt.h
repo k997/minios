@@ -1,5 +1,5 @@
-#ifndef __LIB_INTERRUPT_H
-#define __LIB_INTERRUPT_H
+#ifndef __LIB_KERNEL_INTERRUPT_H
+#define __LIB_KERNEL_INTERRUPT_H
 #include "stdint.h"
 
 typedef void *interrupt_handler;

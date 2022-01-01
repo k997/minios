@@ -1,5 +1,5 @@
-#ifndef __KERNEL_MEMEORY_H
-#define __KERNEL_MEMORY_H
+#ifndef __LIB_KERNEL_MEMORY_H
+#define __LIB_KERNEL_MEMORY_H
 
 #define PG_P_1 1
 #define PG_P_0 0

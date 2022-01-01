@@ -1,5 +1,5 @@
-#ifndef __KERNEL_GLOBAL_H
-#define __KERNEL_GLOBAL_H
+#ifndef __LIB_KERNEL_GLOBAL_H
+#define __LIB_KERNEL_GLOBAL_H
 
 #include "stdint.h"
 //-------------- 选择子属性 ---------------

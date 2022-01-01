@@ -1,5 +1,5 @@
-#ifndef __KERNEL_IDT_H
-#define __KERNEL_IDT_H
+#ifndef __LIB_KERNEL_IDT_H
+#define __LIB_KERNEL_IDT_H
 // idt 描述符属性
 #define IDT_DESC_P 1
 #define IDT_DESC_DPL0 0

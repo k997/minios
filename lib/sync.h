@@ -1,8 +1,8 @@
 /*
     进程同步
  */
-#ifndef __LIB_LOCK_H
-#define __LIB_LOCK_H
+#ifndef __LIB_SYNC_H
+#define __LIB_SYNC_H
 
 #include "list.h"
 #include "stdint.h"
