@@ -203,6 +203,17 @@ static void map_vaddr2phyaddr(void *_vaddr, void *_phyaddr)
     *pte = (phyaddr | PG_US_U | PG_RW_W | PG_P_1);
 }
 
+// 虚拟地址转换为对应的物理地址
+uint32_t vaddr2paddr(uint32_t vaddr)
+{
+    uint32_t *pte = pte_ptr(vaddr);
+    /* 
+    (*pte)的值是页表所在的物理页框地址，
+    虚拟地址对应的物理地址 = *pde 去掉其低 12 位的页表项属性 + 虚拟地址 vaddr 的低 12 位
+     */
+    return ((*pte & 0xfffff000) + (vaddr & 0x00000fff));
+}
+
 // pde 页目录项，页目录表的条目
 // 构造能访问 vaddr 所在的 pde 的虚拟地址
 static uint32_t *pde_ptr(uint32_t vaddr)

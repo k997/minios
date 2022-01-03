@@ -15,7 +15,11 @@ void main(void)
   thread_create("taskA", 10, thread_run_func, "taskA ");
   thread_create("taskB", 20, thread_run_func, "taskB ");
   thread_create("taskC", 30, thread_run_func, "taskC ");
-  put_int(kernel_page_alloc_from(0xc2000000,1));
+  void* page = kernel_page_alloc_from(0xc2000000,1);
+  put_int(page);
+  put_char('\n');
+
+  put_int(vaddr2paddr((uint32_t)page));
   put_char('\n');
   interrupt_enable();
   while (1)
