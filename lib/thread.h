@@ -2,6 +2,7 @@
 #define __LIB_THREAD_H
 #include "stdint.h"
 #include "list.h"
+#include "memory.h"
 
 #define THREAD_STACK_MAGIC_NUM 0x19870916
 // 自定义通用函数类型,在多线程函数中作为形参
@@ -96,6 +97,7 @@ typedef struct task_struct
     list_elem thread_all_list_tag;    // 全部线程队列的节点
 
     uint32_t *pgdir;      // 进程页表地址, 若是线程则为 NULL
+    pool vaddr;
     uint32_t stack_magic; // PCB 的边界标记,用于检测栈的溢出, 防止栈内容覆盖 PCB 其他信息
                           // 该值为自定义的 magic number, 若 PCB 边界等于该值, 则说明 PCB 数据没有被栈覆盖
 } task_struct;

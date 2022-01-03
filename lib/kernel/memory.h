@@ -30,5 +30,7 @@ extern pool kernel_virtual_pool;
 void mem_init(void);
 void mem_pool_init(void);
 void *kernel_page_alloc(uint32_t cnt);
+void *kernel_page_alloc_from(uint32_t addr, uint32_t cnt);
 void *user_page_alloc(uint32_t cnt);
+void *user_page_alloc_from(uint32_t addr, uint32_t cnt);
 #endif

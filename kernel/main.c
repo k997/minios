@@ -15,9 +15,9 @@ void main(void)
   thread_create("taskA", 10, thread_run_func, "taskA ");
   thread_create("taskB", 20, thread_run_func, "taskB ");
   thread_create("taskC", 30, thread_run_func, "taskC ");
-
+  put_int(kernel_page_alloc_from(0xc2000000,1));
+  put_char('\n');
   interrupt_enable();
-  put_str("no output");
   while (1)
 
     ;

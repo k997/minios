@@ -3,7 +3,8 @@
 #include "string.h"
 #include "debug.h"
 #include "sync.h"
-
+#include "thread.h"
+#include "stdint.h"
 /*
     页面分配流程
     virtual_page_alloc 分配虚拟内存,返回虚拟内存地址
@@ -47,11 +48,11 @@ static pool kernel_phy_pool, user_phy_pool;
 // 内存池互斥访问
 static lock kernel_pool_lock, user_pool_lock;
 
-static void *physical_page_alloc(pool_flag pf);
-static void *virtual_page_alloc(pool_flag pf, uint32_t cnt);
+static void *physical_page_alloc(pool_flag pf, uint32_t cnt);
+static void *virtual_page_alloc_from(pool_flag pf, uint32_t addr, uint32_t cnt);
 static void map_vaddr2phyaddr(void *_vaddr, void *_phyaddr);
-static void *page_alloc(pool_flag pf, uint32_t cnt);
-static void *pool_page_alloc(pool *current_pool, uint32_t cnt);
+static void *page_alloc_from(pool_flag pf, uint32_t addr, uint32_t cnt);
+static void *pool_page_alloc_from(pool *current_pool, uint32_t addr, uint32_t cnt);
 static uint32_t *pde_ptr(uint32_t vaddr);
 static uint32_t *pte_ptr(uint32_t vaddr);
 static void physical_mem_pool_init();
@@ -60,46 +61,110 @@ static void kernel_virtual_mem_pool_init();
 void *kernel_page_alloc(uint32_t cnt)
 {
     lock_acquire(&kernel_pool_lock);
-    void* addr = page_alloc(PF_KERNEL, cnt);
+    void *vaddr = page_alloc_from(PF_KERNEL, MEM_MAX_SIZE, cnt);
     lock_release(&kernel_pool_lock);
-    return addr;
+    return vaddr;
+}
+
+void *kernel_page_alloc_from(uint32_t addr, uint32_t cnt)
+{
+    lock_acquire(&kernel_pool_lock);
+    void *vaddr = page_alloc_from(PF_KERNEL, addr, cnt);
+    lock_release(&kernel_pool_lock);
+    return vaddr;
 }
 
 void *user_page_alloc(uint32_t cnt)
 {
     lock_acquire(&user_pool_lock);
-    void* addr = page_alloc(PF_USER, cnt);
+    void *vaddr = page_alloc_from(PF_USER, MEM_MAX_SIZE, cnt);
     lock_release(&user_pool_lock);
-    return addr;
+    return vaddr;
 }
 
-static void *page_alloc(pool_flag pf, uint32_t cnt)
+void *user_page_alloc_from(uint32_t addr, uint32_t cnt)
 {
-    void *vaddr_start = virtual_page_alloc(pf, cnt);
+    lock_acquire(&user_pool_lock);
+    void *vaddr = page_alloc_from(PF_USER, addr, cnt);
+    lock_release(&user_pool_lock);
+    return vaddr;
+}
+
+/* 
+    addr 为 MEM_MAX_SIZE，则随机申请连续 cnt 页内存，否则从 addr 起申请连续 cnt 页内存
+    申请成功返回内存页起始地址，失败返回 NULL
+ */
+static void *page_alloc_from(pool_flag pf, uint32_t addr, uint32_t cnt)
+{
+    void *vaddr_start = virtual_page_alloc_from(pf, addr, cnt);
     if (vaddr_start == NULL)
         return NULL;
 
     /* 虚拟地址连续，但物理地址可以不连续，所以逐个做映射*/
-    uint32_t vaddr = (uint32_t)vaddr_start;
     uint32_t __cnt = cnt;
+    // 若随机申请内存，addr 可能是 MEM_MAX_SIZE, 此处必须重新赋值
+    addr = (uint32_t)vaddr_start;
     while (__cnt-- > 0)
     {
-        void *paddr = physical_page_alloc(pf);
+        void *paddr = physical_page_alloc(pf, 1);
         if (paddr == NULL)
         {
             // 分配失败应全部释放已分配的内存,此处暂未实现
             return NULL;
         }
-        map_vaddr2phyaddr((void *)vaddr, paddr);
-        vaddr += PG_SIZE;
+        map_vaddr2phyaddr((void *)addr, paddr);
+        addr += PG_SIZE;
     }
     // 分配后所有页框清零
     memset(vaddr_start, 0, cnt * PG_SIZE);
     return vaddr_start;
 }
+/* 
+    addr 为 MEM_MAX_SIZE，则从虚拟地址池随机申请连续 cnt 页内存
+    否则从 addr 起申请连续 cnt 页内存
+    申请成功返回内存页起始地址，失败返回 NULL
+ */
+static void *virtual_page_alloc_from(pool_flag pf, uint32_t addr, uint32_t cnt)
+{
+    pool *current_pool;
+    switch (pf)
+    {
+    case PF_KERNEL:
+        current_pool = &kernel_virtual_pool;
+        break;
+    case PF_USER:
+        current_pool = &(thread_running())->vaddr;
+        break;
+    }
+    return pool_page_alloc_from(current_pool, addr, cnt);
+}
+/* 
+    addr 为 MEM_MAX_SIZE，则从指定内存池地址池随机申请连续 cnt 页内存
+    否则从 addr 起申请连续 cnt 页内存
+    申请成功返回内存页起始地址，失败返回 NULL
+ */
+static void *pool_page_alloc_from(pool *current_pool, uint32_t addr, uint32_t cnt)
+{
+    int bit_index_start;
+    // addr 为内存最大地址则说明随机分配地址
+    if (addr == MEM_MAX_SIZE)
+    {
+        bit_index_start = bitmap_alloc(&(current_pool->btmp), cnt);
+        addr = current_pool->addr_start + bit_index_start * PG_SIZE;
+    }
+    else
+    {
+        bit_index_start = (addr - current_pool->addr_start) / PG_SIZE;
+        ASSERT(bit_index_start > 0);
+        bit_index_start = bitmap_alloc_from(&(current_pool->btmp), bit_index_start, cnt);
+    }
+    if (bit_index_start == -1)
+        return NULL;
+    return (void *)addr;
+}
 
-// 物理内存地址可以不连续，所以每次只申请 1 页，失败则返回 NULL
-static void *physical_page_alloc(pool_flag pf)
+// 物理内存池申请连续 cnt 页内存
+static void *physical_page_alloc(pool_flag pf, uint32_t cnt)
 {
     pool *current_pool;
     switch (pf)
@@ -111,23 +176,8 @@ static void *physical_page_alloc(pool_flag pf)
         current_pool = &user_phy_pool;
         break;
     }
-
-    return pool_page_alloc(current_pool, 1);
-}
-// 虚拟内存池中申请连续 cnt 页，并返回第一块的起始地址，失败则返回 NULL
-static void *virtual_page_alloc(pool_flag pf, uint32_t cnt)
-{
-    pool *current_pool;
-    switch (pf)
-    {
-    case PF_KERNEL:
-        current_pool = &kernel_virtual_pool;
-        break;
-    case PF_USER:
-        // 用户程序的内存分配依赖进程的实现
-        break;
-    }
-    return pool_page_alloc(current_pool, cnt);
+    // 随机申请内存页
+    return pool_page_alloc_from(current_pool, MEM_MAX_SIZE, cnt);
 }
 
 static void map_vaddr2phyaddr(void *_vaddr, void *_phyaddr)
@@ -140,7 +190,7 @@ static void map_vaddr2phyaddr(void *_vaddr, void *_phyaddr)
     if (!(*pde & 0x00000001))
     {
         // 页表的页框一律从内核内存池分配
-        uint32_t pde_phyaddr = (uint32_t)physical_page_alloc(PF_KERNEL);
+        uint32_t pde_phyaddr = (uint32_t)physical_page_alloc(PF_KERNEL, 1);
         *pde = (pde_phyaddr | PG_US_U | PG_RW_W | PG_P_1);
         // 页表物理页起始地址(int)pte & 0xfffff000
         memset((void *)((int)pte & 0xfffff000), 0, PG_SIZE);
@@ -151,19 +201,6 @@ static void map_vaddr2phyaddr(void *_vaddr, void *_phyaddr)
         PANIC("pte repeat");
     // 填充页表
     *pte = (phyaddr | PG_US_U | PG_RW_W | PG_P_1);
-}
-
-// 从指定内存池中申请连续 cnt 页，并返回第一页的起始地址，失败则返回 NULL
-static void *pool_page_alloc(pool *current_pool, uint32_t cnt)
-{
-    int addr_start, bit_index_start = -1;
-
-    bit_index_start = bitmap_alloc(&(current_pool->btmp), cnt);
-
-    if (bit_index_start == -1)
-        return NULL;
-    addr_start = current_pool->addr_start + bit_index_start * PG_SIZE;
-    return (void *)addr_start;
 }
 
 // pde 页目录项，页目录表的条目
