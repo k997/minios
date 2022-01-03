@@ -14,5 +14,6 @@ typedef struct
 
 void bitmap_init(bitmap *btmp);
 int bitmap_alloc(bitmap *btmp, uint32_t count);
-void bitmap_free(bitmap *btmp, uint32_t index, uint32_t count);
+int bitmap_alloc_from(bitmap *btmp, int index, uint32_t count);
+void bitmap_free(bitmap *btmp, int index, uint32_t count);
 #endif

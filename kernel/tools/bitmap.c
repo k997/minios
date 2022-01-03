@@ -23,8 +23,26 @@ int bitmap_alloc(bitmap *btmp, uint32_t count)
     }
     return start_index;
 }
+// 分配从 start_index 开始连续 count 个 bit， 成功返回  start_index, 失败则返回 -1
+int bitmap_alloc_from(bitmap *btmp, int start_index, uint32_t count)
+{
+    ASSERT((start_index + count) / 8 < btmp->byte_length);
+    if ((start_index + count) / 8 >= btmp->byte_length)
+        return -1;
+    uint32_t index,status;
+    for (index = start_index; index < start_index + count && status != BITMAP_MASK; index++)
+        status = bitmap_bit_status(btmp, index);
+
+    // 从 start_index 开始连续 count 个 bit 中部分被已被分配
+    if (status == BITMAP_MASK)
+        return -1;
+    for (index = start_index; index < start_index + count; index++)
+        bitmap_set(btmp, start_index + index, 1);
+    return start_index;
+}
+
 // 释放从 start_index 开始的连续 count 个 bit
-void bitmap_free(bitmap *btmp, uint32_t index, uint32_t count)
+void bitmap_free(bitmap *btmp, int index, uint32_t count)
 {
     uint32_t offset;
     for (offset = 0; offset < count; offset++)
