@@ -34,6 +34,8 @@
 // 该地址由 loader 中地址计算而来
 #define TOTAL_MEM_ADDR 0x903
 
+
+#define RANDOM_PAGE_ADDR MEM_MAX_SIZE
 // 区分内核内存池及用户内存池
 typedef enum
 {
@@ -61,7 +63,7 @@ static void kernel_virtual_mem_pool_init();
 void *kernel_page_alloc(uint32_t cnt)
 {
     lock_acquire(&kernel_pool_lock);
-    void *vaddr = page_alloc_from(PF_KERNEL, MEM_MAX_SIZE, cnt);
+    void *vaddr = page_alloc_from(PF_KERNEL, RANDOM_PAGE_ADDR, cnt);
     lock_release(&kernel_pool_lock);
     return vaddr;
 }
@@ -77,7 +79,7 @@ void *kernel_page_alloc_from(uint32_t addr, uint32_t cnt)
 void *user_page_alloc(uint32_t cnt)
 {
     lock_acquire(&user_pool_lock);
-    void *vaddr = page_alloc_from(PF_USER, MEM_MAX_SIZE, cnt);
+    void *vaddr = page_alloc_from(PF_USER, RANDOM_PAGE_ADDR, cnt);
     lock_release(&user_pool_lock);
     return vaddr;
 }
@@ -91,7 +93,7 @@ void *user_page_alloc_from(uint32_t addr, uint32_t cnt)
 }
 
 /* 
-    addr 为 MEM_MAX_SIZE，则随机申请连续 cnt 页内存，否则从 addr 起申请连续 cnt 页内存
+    从 addr 起申请连续 cnt 页内存
     申请成功返回内存页起始地址，失败返回 NULL
  */
 static void *page_alloc_from(pool_flag pf, uint32_t addr, uint32_t cnt)
@@ -102,7 +104,7 @@ static void *page_alloc_from(pool_flag pf, uint32_t addr, uint32_t cnt)
 
     /* 虚拟地址连续，但物理地址可以不连续，所以逐个做映射*/
     uint32_t __cnt = cnt;
-    // 若随机申请内存，addr 可能是 MEM_MAX_SIZE, 此处必须重新赋值
+    // 若随机申请内存，addr 可能是 RANDOM_PAGE_ADDR, 此处必须重新赋值
     addr = (uint32_t)vaddr_start;
     while (__cnt-- > 0)
     {
@@ -120,8 +122,7 @@ static void *page_alloc_from(pool_flag pf, uint32_t addr, uint32_t cnt)
     return vaddr_start;
 }
 /* 
-    addr 为 MEM_MAX_SIZE，则从虚拟地址池随机申请连续 cnt 页内存
-    否则从 addr 起申请连续 cnt 页内存
+    从虚拟地址池 addr 起申请连续 cnt 页内存
     申请成功返回内存页起始地址，失败返回 NULL
  */
 static void *virtual_page_alloc_from(pool_flag pf, uint32_t addr, uint32_t cnt)
@@ -139,15 +140,14 @@ static void *virtual_page_alloc_from(pool_flag pf, uint32_t addr, uint32_t cnt)
     return pool_page_alloc_from(current_pool, addr, cnt);
 }
 /* 
-    addr 为 MEM_MAX_SIZE，则从指定内存池地址池随机申请连续 cnt 页内存
-    否则从 addr 起申请连续 cnt 页内存
+    从指定内存池地址池随机申请连续 cnt 页内存
     申请成功返回内存页起始地址，失败返回 NULL
  */
 static void *pool_page_alloc_from(pool *current_pool, uint32_t addr, uint32_t cnt)
 {
     int bit_index_start;
-    // addr 为内存最大地址则说明随机分配地址
-    if (addr == MEM_MAX_SIZE)
+    // 随机分配地址
+    if (addr == RANDOM_PAGE_ADDR)
     {
         bit_index_start = bitmap_alloc(&(current_pool->btmp), cnt);
         addr = current_pool->addr_start + bit_index_start * PG_SIZE;
@@ -177,7 +177,7 @@ static void *physical_page_alloc(pool_flag pf, uint32_t cnt)
         break;
     }
     // 随机申请内存页
-    return pool_page_alloc_from(current_pool, MEM_MAX_SIZE, cnt);
+    return pool_page_alloc_from(current_pool, RANDOM_PAGE_ADDR, cnt);
 }
 
 static void map_vaddr2phyaddr(void *_vaddr, void *_phyaddr)
