@@ -34,7 +34,6 @@
 // 该地址由 loader 中地址计算而来
 #define TOTAL_MEM_ADDR 0x903
 
-
 #define RANDOM_PAGE_ADDR MEM_MAX_SIZE
 // 区分内核内存池及用户内存池
 typedef enum
@@ -59,6 +58,10 @@ static uint32_t *pde_ptr(uint32_t vaddr);
 static uint32_t *pte_ptr(uint32_t vaddr);
 static void physical_mem_pool_init();
 static void kernel_virtual_mem_pool_init();
+static void unmap_vaddr2phyaddr(uint32_t vaddr);
+static void pool_page_free(pool *current_pool, uint32_t addr, uint32_t cnt);
+static void physical_page_free(uint32_t addr, uint32_t cnt);
+static void virtual_page_free(uint32_t addr, uint32_t cnt);
 
 void *kernel_page_alloc(uint32_t cnt)
 {
@@ -92,7 +95,7 @@ void *user_page_alloc_from(uint32_t addr, uint32_t cnt)
     return vaddr;
 }
 
-/* 
+/*
     从 addr 起申请连续 cnt 页内存
     申请成功返回内存页起始地址，失败返回 NULL
  */
@@ -121,25 +124,17 @@ static void *page_alloc_from(pool_flag pf, uint32_t addr, uint32_t cnt)
     memset(vaddr_start, 0, cnt * PG_SIZE);
     return vaddr_start;
 }
-/* 
+/*
     从虚拟地址池 addr 起申请连续 cnt 页内存
     申请成功返回内存页起始地址，失败返回 NULL
  */
 static void *virtual_page_alloc_from(pool_flag pf, uint32_t addr, uint32_t cnt)
 {
-    pool *current_pool;
-    switch (pf)
-    {
-    case PF_KERNEL:
-        current_pool = &kernel_virtual_pool;
-        break;
-    case PF_USER:
-        current_pool = &(thread_running())->vaddr;
-        break;
-    }
+    pool *current_pool = (pf == PF_KERNEL) ? &kernel_virtual_pool : &(thread_running())->vaddr;
+
     return pool_page_alloc_from(current_pool, addr, cnt);
 }
-/* 
+/*
     从指定内存池地址池随机申请连续 cnt 页内存
     申请成功返回内存页起始地址，失败返回 NULL
  */
@@ -166,16 +161,7 @@ static void *pool_page_alloc_from(pool *current_pool, uint32_t addr, uint32_t cn
 // 物理内存池申请连续 cnt 页内存
 static void *physical_page_alloc(pool_flag pf, uint32_t cnt)
 {
-    pool *current_pool;
-    switch (pf)
-    {
-    case PF_KERNEL:
-        current_pool = &kernel_phy_pool;
-        break;
-    case PF_USER:
-        current_pool = &user_phy_pool;
-        break;
-    }
+    pool *current_pool = (pf == PF_KERNEL) ? &kernel_phy_pool : &user_phy_pool;
     // 随机申请内存页
     return pool_page_alloc_from(current_pool, RANDOM_PAGE_ADDR, cnt);
 }
@@ -207,7 +193,7 @@ static void map_vaddr2phyaddr(void *_vaddr, void *_phyaddr)
 uint32_t vaddr2paddr(uint32_t vaddr)
 {
     uint32_t *pte = pte_ptr(vaddr);
-    /* 
+    /*
     (*pte)的值是页表所在的物理页框地址，
     虚拟地址对应的物理地址 = *pde 去掉其低 12 位的页表项属性 + 虚拟地址 vaddr 的低 12 位
      */
@@ -303,4 +289,67 @@ static void physical_mem_pool_init()
     user_phy_pool.btmp.byte_length = user_free_pages / 8;
     user_phy_pool.btmp.bits = (void *)(MEM_BITMAP_BASE + kernel_phy_pool.btmp.byte_length);
     bitmap_init(&user_phy_pool.btmp);
+}
+
+// 释放 addr 起的 cnt 页内存
+void page_free(void *addr, uint32_t cnt)
+{
+    uint32_t __paddr, __vaddr = (uint32_t)addr;
+    ASSERT(__vaddr % PG_SIZE == 0);
+    // addr 地址不是自然页起始地址
+    if (__vaddr % PG_SIZE != 0)
+        return;
+    // 释放虚拟地址
+    virtual_page_free(__vaddr, cnt);
+    // 物理内存不连续，逐页释放物理内存
+    uint32_t i;
+    for (i = 0; i < cnt; i++)
+    {
+        __paddr = vaddr2paddr(__vaddr + PG_SIZE * i);
+
+        physical_page_free(__paddr, 1);
+        // 删除页表
+        unmap_vaddr2phyaddr(__vaddr + PG_SIZE * i);
+    }
+}
+
+
+// 从虚拟地址池释放 addr 起连续 cnt 页内存
+static void virtual_page_free(uint32_t addr, uint32_t cnt)
+{
+    // 释放内存可以通过判断是否有页表判断是用户内存还是内核地址
+    // 但分配内存不可以，因为内存分配可能发生进程未初始化时
+    task_struct *current_thread = thread_running();
+    // 无单独页表为内核线程
+    pool *current_pool = (current_thread->pgdir == NULL) ? &kernel_virtual_pool : &current_thread->vaddr;
+    pool_page_free(current_pool, addr, cnt);
+}
+
+
+// 物理内存池释放 addr 起连续 cnt 页内存
+static void physical_page_free(uint32_t addr, uint32_t cnt)
+{
+    // 跳过保留内存，低端 1 MB 和内核页表
+    if (addr < 0x102000)
+        return;
+    // 在内核物理内存地址低于用户物理内存
+    pool *current_pool = (addr < user_phy_pool.addr_start) ? &kernel_phy_pool : &user_phy_pool;
+    pool_page_free(current_pool, addr, cnt);
+}
+
+
+static void pool_page_free(pool *current_pool, uint32_t addr, uint32_t cnt)
+{
+    int idx = (addr - current_pool->addr_start) / PG_SIZE;
+    bitmap_free(&current_pool->btmp, idx, cnt);
+}
+
+// 删除 addr 对应的页表项，即对应页表项 P 位置 0
+static void unmap_vaddr2phyaddr(uint32_t vaddr)
+{
+    uint32_t *pte = pte_ptr(vaddr);
+    *pte = *pte & PG_P_0; // 页表项页表 P 置 0
+    // invlpg [addr];  注意方括号，invlpg 参数必须是 addr 处内存
+    asm volatile("invlpg %0" ::"m"(vaddr)
+                 : "memory"); // 刷新 tlb, 使 vaddr 对应的 tlb 条目失效
 }

@@ -21,6 +21,7 @@ void main(void)
 
   put_int(vaddr2paddr((uint32_t)page));
   put_char('\n');
+  page_free(page,1);
   interrupt_enable();
   while (1)
 
