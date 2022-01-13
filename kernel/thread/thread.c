@@ -4,6 +4,7 @@
 #include "memory.h"
 #include "interrupt.h"
 #include "debug.h"
+#include "process.h"
 
 task_struct *main_thread; // 主线程 PCB
 list thread_ready_list;
@@ -85,6 +86,8 @@ void thread_schedule(void)
     list_elem *thread_tag = list_pop(&thread_ready_list);
     task_struct *next_thread = container_of(task_struct, thread_status_list_tag, thread_tag);
     next_thread->status = TASK_RUNNING;
+    // 激活任务页表
+    process_activate(next_thread);
     switch_to(current_thread, next_thread);
 }
 

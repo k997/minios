@@ -42,6 +42,7 @@ static gdt_desc gdt_desc_make(void *desc_addr, uint32_t desc_limit,
 // tss 0 特权级栈更新为 pthread 的 0 特权级栈
 void tss_update_esp(task_struct *pthread)
 {
+    // PCB 全部位于内核空间，esp0 的地址在页表最顶端
     tss.esp0 = (uint32_t *)((uint32_t)pthread + PG_SIZE);
 }
 
