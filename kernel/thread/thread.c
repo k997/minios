@@ -28,7 +28,7 @@ task_struct *thread_create(char *name, int priority, thread_func func, void *fun
     memset(thread, 0, sizeof(*thread));
 
     strcpy(thread->name, name);
-    thread->status = TASK_READY;
+    thread->status = TASK_NEW;
     thread->priority = priority;
     thread->self_kstack = (uint32_t *)((uint32_t)thread + PG_SIZE); // 设置 PCB 栈顶为 PCB 顶端地址
     thread->ticks = priority;
@@ -40,14 +40,21 @@ task_struct *thread_create(char *name, int priority, thread_func func, void *fun
     // 将 thread->self_kstack 指向线程的线程栈，使栈中 eip 指向要运行的函数 func
     thread_kstack(thread, func, func_args);
 
-    // 线程加入就绪队列
-    ASSERT(!list_find_elem(&thread_ready_list, &thread->thread_status_list_tag))
-    list_append(&thread_ready_list, &thread->thread_status_list_tag);
-    // 线程加入全部线程队列
-    ASSERT(!list_find_elem(&thread_all_list, &thread->thread_all_list_tag))
-    list_append(&thread_all_list, &thread->thread_all_list_tag);
-
     return thread;
+}
+
+void thread_start(task_struct *pthread)
+{
+    interrupt_status old_status = interrupt_disable();
+    pthread->status = TASK_READY;
+
+    // 线程加入就绪队列
+    ASSERT(!list_find_elem(&thread_ready_list, &pthread->thread_status_list_tag))
+    list_append(&thread_ready_list, &pthread->thread_status_list_tag);
+    // 线程加入全部线程队列
+    ASSERT(!list_find_elem(&thread_all_list, &pthread->thread_all_list_tag))
+    list_append(&thread_all_list, &pthread->thread_all_list_tag);
+    interrupt_set_status(old_status);
 }
 
 task_struct *thread_running(void)
