@@ -64,7 +64,9 @@ static void general_interrupt_handler(uint8_t ver_nr)
     }
     put_str("\nint vector: 0x");
     put_int(ver_nr);
-    put_char('\n');
+    put_str("\ninterrupt name: ");
+    put_str(interrupt_program_table[ver_nr].name);
+    put_str("\n");
 
     // 若为 Pagefault，打印缺失的地址
     // Pagefault 时缺失地址暂存在 cr2 寄存器
