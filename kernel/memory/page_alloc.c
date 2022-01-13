@@ -149,7 +149,7 @@ static void *pool_page_alloc_from(pool *current_pool, uint32_t addr, uint32_t cn
     }
     else
     {
-        bit_index_start = (addr - current_pool->addr_start) / PG_SIZE;
+        bit_index_start = (addr - current_pool->addr_start) / PG_SIZE / 8;
         ASSERT(bit_index_start > 0);
         bit_index_start = bitmap_alloc_from(&(current_pool->btmp), bit_index_start, cnt);
     }
@@ -313,7 +313,6 @@ void page_free(void *addr, uint32_t cnt)
     }
 }
 
-
 // 从虚拟地址池释放 addr 起连续 cnt 页内存
 static void virtual_page_free(uint32_t addr, uint32_t cnt)
 {
@@ -325,7 +324,6 @@ static void virtual_page_free(uint32_t addr, uint32_t cnt)
     pool_page_free(current_pool, addr, cnt);
 }
 
-
 // 物理内存池释放 addr 起连续 cnt 页内存
 static void physical_page_free(uint32_t addr, uint32_t cnt)
 {
@@ -336,7 +334,6 @@ static void physical_page_free(uint32_t addr, uint32_t cnt)
     pool *current_pool = (addr < user_phy_pool.addr_start) ? &kernel_phy_pool : &user_phy_pool;
     pool_page_free(current_pool, addr, cnt);
 }
-
 
 static void pool_page_free(pool *current_pool, uint32_t addr, uint32_t cnt)
 {
