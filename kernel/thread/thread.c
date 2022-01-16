@@ -7,11 +7,13 @@
 #include "process.h"
 
 task_struct *main_thread; // 主线程 PCB
+task_struct *idle_thread; // 系统无任务时时运行的线程
 list thread_ready_list;
 list thread_all_list;
 static void make_main_thread(char *name, int priority);
 static void kernel_thread(thread_func *func, void *func_args);
 static void thread_kstack(task_struct *thread, thread_func func, void *func_args);
+static void idle(void *args);
 
 // 线程模块初始化
 void thread_init(void)
@@ -20,6 +22,8 @@ void thread_init(void)
     list_init(&thread_all_list);
     // main 线程的 PCB 空间已在 0xc009e000 提前分配好，无需再次分配空间, 且此时其已经是运行状态，因此单独为 main 线程创建 PCB
     make_main_thread("main", 31);
+    idle_thread = thread_create("idle", 10, idle, NULL);
+    thread_start(idle_thread);
 }
 
 task_struct *thread_create(char *name, int priority, thread_func func, void *func_args)
@@ -82,7 +86,12 @@ void thread_schedule(void)
         current_thread->ticks = current_thread->priority;
     }
 
-    ASSERT(!list_empty(&thread_ready_list));
+    // 若任务就绪队列为空，则运行 idle 线程
+    if (list_empty(&thread_ready_list))
+    {
+        thread_unblock(idle_thread);
+    }
+
     list_elem *thread_tag = list_pop(&thread_ready_list);
     task_struct *next_thread = container_of(task_struct, thread_status_list_tag, thread_tag);
     next_thread->status = TASK_RUNNING;
@@ -139,6 +148,16 @@ void thread_unblock(task_struct *pthread)
     interrupt_set_status(old_status);
 }
 
+// 线程主动让出处理器
+void thread_yield(void)
+{
+    task_struct *current_thread = thread_running();
+    interrupt_status old_status = interrupt_disable();
+    list_append(&thread_ready_list, &current_thread->thread_status_list_tag);
+    current_thread->status = TASK_READY;
+    thread_schedule();
+    interrupt_set_status(old_status);
+}
 static void kernel_thread(thread_func *func, void *func_args)
 {
     // 任务调度基于时钟中断
@@ -162,4 +181,17 @@ static void make_main_thread(char *name, int priority)
 
     ASSERT(!list_find_elem(&thread_all_list, &main_thread->thread_all_list_tag));
     list_append(&thread_all_list, &main_thread->thread_all_list_tag);
+}
+
+// 就绪队列无任务时运行的任务
+static void idle(void *args)
+{
+    while (1)
+    {
+        // idle 线程阻塞自己
+        thread_block(TASK_BLOCKED);
+        // 在 thread_schedule 中 unblock，执行 hlt 指令
+        asm volatile("sti;hlt" ::/* 运行 hlt 必须在开中断 sti 情况下运行 */
+                     : "memory");
+    }
 }

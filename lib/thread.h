@@ -118,4 +118,7 @@ task_struct *thread_running(void);
 void thread_block(task_status stat);
 // 解除指定线程阻塞状态
 void thread_unblock(task_struct *pthread);
+// 线程主动让出处理器
+void thread_yield(void);
+
 #endif
