@@ -21,7 +21,7 @@ void list_insert_before(list_elem *elem, list_elem *new)
 }
 void list_push(list *plist, list_elem *new)
 {
-    list_insert_before(&plist->head, new);
+    list_insert_before(&plist->head.next, new);
 }
 
 void list_append(list *plist, list_elem *new)
