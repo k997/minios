@@ -58,3 +58,4 @@ dkms.conf
 .vscode/settings.json
 bochs/build/**
 .gitignore
+.vscode/settings.json

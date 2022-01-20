@@ -11,6 +11,9 @@
         "random": "c",
         "list": "c",
         "functional": "c",
-        "stdint.h": "c"
+        "stdint.h": "c",
+        "ioqueue.h": "c",
+        "print.h": "c",
+        "typeinfo": "c"
     }
 }
