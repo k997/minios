@@ -9,28 +9,29 @@
 #include "thread.h"
 #include "process.h"
 #include "ioqueue.h"
+#include "timer.h"
 
 ioqueue ioq;
 
 void consumerA();
 void consumerB();
 void producer();
-void print(task_struct *);
+void print();
 void main(void)
 {
   init_all();
 
   ioqueue_init(&ioq);
-  task_struct *taskP = thread_create("producer", 100, producer, NULL);
-  task_struct *taskC1 = thread_create("consumer1", 10, consumerA, NULL);
-  task_struct *taskC2 = thread_create("consumer2", 10, consumerB, NULL);
-  task_struct *taskC = thread_create("print", 20, print, taskC1);
+  // task_struct *taskP = thread_create("producer", 100, producer, NULL);
+  // task_struct *taskC1 = thread_create("consumer1", 10, consumerA, NULL);
+  // task_struct *taskC2 = thread_create("consumer2", 10, consumerB, NULL);
+  task_struct *taskC = thread_create("print", 20, print, NULL);
 
   put_str("task has been created \n");
-  process_start(taskP);
-  process_start(taskC2);
-  process_start(taskC1);
-  // process_start(taskC);
+  // process_start(taskP);
+  // process_start(taskC2);
+  // process_start(taskC1);
+  process_start(taskC);
   put_str("task has been ready \n");
 
   interrupt_enable();
@@ -38,11 +39,12 @@ void main(void)
   while (1)
     ;
 }
-void print(task_struct *t)
+void print()
 {
   while (1)
   {
-    put_int(t->status);
+    put_str("hellp");
+    sleep(5);
   }
 }
 void consumerA()
