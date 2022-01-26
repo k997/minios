@@ -5,7 +5,7 @@
 #include "sync.h"
 #include "thread.h"
 
-#define BUF_SIZE 64
+#define IOQUEUE_BUF_SIZE 64
 
 /*
     环形缓冲区队列
@@ -17,7 +17,7 @@ typedef struct ioqueue
     task_struct *producer; // 缓冲区满时 wait 状态的生产者
     task_struct *consumer; // 缓冲区空时 wait 状态的消费者
     // 由 buf 数组及 head, tail 组成的双向队列
-    char buf[BUF_SIZE];
+    char buf[IOQUEUE_BUF_SIZE];
     int32_t head; // head 处存入数据
     int32_t tail; // tail 处取出数据
 } ioqueue;

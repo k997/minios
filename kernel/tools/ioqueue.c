@@ -109,5 +109,5 @@ static void wakeup(task_struct **waiter)
 */
 static int32_t next_pos(int32_t pos)
 {
-    return (pos + 1) % BUF_SIZE;
+    return (pos + 1) % IOQUEUE_BUF_SIZE;
 }
