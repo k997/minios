@@ -15,9 +15,9 @@ struct gate_desc
 };
 
 // 中断描述符表
-static struct gate_desc idt[IDT_DESC_CNT];
+static struct gate_desc idt[MAX_INTR_NR];
 // interrupt_entry_table ,interrupt.asm中的中断处理程序数组
-extern interrupt_handler interrupt_entry_table[IDT_DESC_CNT];
+extern interrupt_handler interrupt_entry_table[MAX_INTR_NR];
 
 static void make_idt_desc(struct gate_desc *gd, uint8_t attr,
                           interrupt_handler handler);
@@ -41,7 +41,12 @@ void idt_init()
   asm volatile("lidt %0" ::"m"(idt_operand));
 }
 
-// 创建中断门描述符
+// 注册中断描述符
+void idt_desc_register(uint8_t intr_ver_nr, uint8_t attr, interrupt_handler handler)
+{
+  make_idt_desc(&idt[intr_ver_nr], attr, handler);
+}
+// 创建中断门描述符辅助函数
 static void make_idt_desc(struct gate_desc *gd, uint8_t attr,
                           interrupt_handler handler)
 {
@@ -56,8 +61,8 @@ static void make_idt_desc(struct gate_desc *gd, uint8_t attr,
 static void idt_desc_init(void)
 {
   int i;
-  for (i = 0; i < IDT_DESC_CNT; i++)
+  for (i = 0; i < MAX_INTR_NR; i++)
   {
-    make_idt_desc(&idt[i], IDT_DESC_ATTR_DPL0, interrupt_entry_table[i]);
+    idt_desc_register(i, IDT_DESC_ATTR_DPL0, interrupt_entry_table[i]);
   }
 }

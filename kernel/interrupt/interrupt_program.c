@@ -12,7 +12,7 @@ struct interrupt_program
 };
 
 // interrupt.asm中使用
-struct interrupt_program interrupt_program_table[IDT_DESC_CNT];
+struct interrupt_program interrupt_program_table[MAX_INTR_NR];
 
 static void general_interrupt_handler(uint8_t ver_nr);
 static void page_fault_handler();
@@ -21,7 +21,7 @@ static void page_fault_handler();
 void interrupt_program_init(void)
 {
     int i;
-    for (i = 0; i < IDT_DESC_CNT; i++)
+    for (i = 0; i < MAX_INTR_NR; i++)
     {
         interrupt_program_table[i].name = "unknow";
         interrupt_program_table[i].handler = general_interrupt_handler;
@@ -95,3 +95,4 @@ static void page_fault_handler()
     while (1)
         ;
 }
+
