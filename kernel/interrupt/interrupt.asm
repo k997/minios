@@ -93,3 +93,37 @@ VECTOR 0x1d,ERROR_CODE
 VECTOR 0x1e,ERROR_CODE
 VECTOR 0x1f,ZERO 
 VECTOR 0x20,ZERO	;时钟中断对应的入口
+
+
+[bits 32]
+extern syscall_table
+
+section .text
+global syscall_handler
+syscall_handler:
+    push 0 ; 0x80 中断无中断错误码，压入 0 ，保证栈中数据统一
+
+    ; 备份上下文
+    push ds
+    push es
+    push fs
+    push gs
+    pushad
+
+    push 0x80   ;系统调用中断向量号
+                ;不管 interrupt_program_table 中的目标程序是否需要参数
+                ;都一律压入中断向量号
+    
+    push edx    ; 系统调用中第 3 个参数
+    push ecx    ; 系统调用中第 2 个参数
+    push ebx    ; 系统调用中第 1 个参数 
+
+    ; 调用 syscall_table 中的 C 版本中断处理函数
+    ; 32 位模式下所有指针均占 4 字节
+    call [syscall_table + eax * 4 ]    
+
+    add esp,12  ; 跨过上面的三个参数
+
+    ; 将 call 调用后的返回值存入当前内核栈中 eax 的位置
+    mov [esp + 8 * 4],eax
+    jmp interrupt_exit ; 退出中断, 恢复上下文

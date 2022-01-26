@@ -21,5 +21,5 @@ typedef void *va_list;
 char *itoa(int value, char *str, uint8_t base);
 uint32_t sprintf(char *buf, const char *format, ...);
 uint32_t vsprintf(char *str, const char *format, va_list ap);
-
+void printf(const char *format, ...);
 #endif

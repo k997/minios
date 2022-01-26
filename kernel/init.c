@@ -5,6 +5,8 @@
 #include "timer.h"
 #include "thread.h"
 #include "gdt.h"
+#include "syscall.h"
+
 void init_all()
 {
   put_str("init all\n");
@@ -30,4 +32,8 @@ void init_all()
   put_str("tss init\n");
   gdt_init();
   put_str("tss init done\n");
+
+  put_str("syscall init\n");
+  syscall_init();
+  put_str("syscall init done\n");
 }

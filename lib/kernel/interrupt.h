@@ -10,8 +10,10 @@ typedef enum
 } interrupt_status;
 
 
-#define MAX_INTR_NR 0x21 // 目前总共支持的中断数
+#define MAX_INTR_NR 0x81 // 目前总共支持的中断数
 
+// 系统调用中断向量号
+#define SYSCALL_INTR_NR 0x80
 
 /* 中段处理程序自己保存中断上下文使用 idt_desc_register */
 void idt_desc_register(uint8_t intr_ver_nr, uint8_t attr, interrupt_handler handler);

@@ -1,0 +1,42 @@
+#include "syscall.h"
+#include "interrupt.h"
+#include "debug.h"
+#include "print.h"
+#include "string.h"
+#include "idt.h"
+
+static uint32_t sys_write(char *str);
+
+extern uint32_t syscall_handler(void);
+syscall syscall_table[SYSCALL_TOTAL_NR];
+
+// 系统调用初始化
+void syscall_init()
+{
+    
+    // 单独处理系统调用，系统调用对应的中断门 dpl 为 3
+    // 系统调用的中断处理程序自己保存中断上下文，因此不用 interrupt_program_register
+    idt_desc_register(SYSCALL_INTR_NR,IDT_DESC_ATTR_DPL3 , syscall_handler);
+    // 注册 write 系统调用
+    syscall_register(SYS_WRITE, sys_write);
+}
+
+// 系统调用注册函数
+void syscall_register(SYSCALL_NR _syscall_nr, syscall _syscall_func)
+{
+    ASSERT(_syscall_nr < SYSCALL_TOTAL_NR);
+    syscall_table[_syscall_nr] = _syscall_func;
+}
+
+// write 系统调用封装，等价于 _syscall_1(SYS_WRITE, str)
+uint32_t write(char *str)
+{
+    return _syscall_1(SYS_WRITE, str);
+}
+
+// write 系统调用处理函数
+static uint32_t sys_write(char *str)
+{
+    put_str(str);
+    return strlen(str);
+}

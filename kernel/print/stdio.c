@@ -1,6 +1,6 @@
 #include "string.h"
 #include "stdio.h"
-
+#include "syscall.h"
 
 /*
     将参数 ap 按照格式 format 输出到字符串 str，
@@ -25,9 +25,9 @@ uint32_t vsprintf(char *str, const char *format, va_list ap)
         // 获得 % 后的字符
         switch (*(++index_ptr))
         {
-        case 's':/* 下一个参数为字符串 */
+        case 's': /* 下一个参数为字符串 */
             arg_str = va_arg(ap, char *);
-            strcpy(buf_ptr, arg_str);/* 将下一个参数复制到 buf_ptr 之后，并更新 buf_ptr 位置 */
+            strcpy(buf_ptr, arg_str); /* 将下一个参数复制到 buf_ptr 之后，并更新 buf_ptr 位置 */
             buf_ptr += strlen(buf_ptr);
             break;
         case 'c':
@@ -49,7 +49,15 @@ uint32_t vsprintf(char *str, const char *format, va_list ap)
     }
     return strlen(str);
 }
-
+void printf(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format); // args = (void*)&format;
+    char buf[STDIO_BUF_SIZE] = {0};
+    vsprintf(buf, format, args);
+    va_end(args);
+    write(buf);
+}
 uint32_t sprintf(char *buf, const char *format, ...)
 {
     va_list args;
