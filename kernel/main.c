@@ -10,43 +10,55 @@
 #include "process.h"
 #include "ioqueue.h"
 #include "timer.h"
+#include "stdio.h"
+#include "kstdio.h"
 
 ioqueue ioq;
 
 void consumerA();
 void consumerB();
 void producer();
-void print();
+
 void main(void)
 {
   init_all();
 
   ioqueue_init(&ioq);
+  char buf[128] = {0};
+  sprintf(buf, "hello %d,%x,%s %c!\n", 10, 10, "no", 'A');
+  put_str(buf);
+  printk("hello %d,%x,%s %c!\n", 10, 10, "kernel_print", 'k');
   // task_struct *taskP = thread_create("producer", 100, producer, NULL);
   // task_struct *taskC1 = thread_create("consumer1", 10, consumerA, NULL);
   // task_struct *taskC2 = thread_create("consumer2", 10, consumerB, NULL);
-  task_struct *taskC = thread_create("print", 20, print, NULL);
+  // task_struct *taskC = process_create("print", print);
 
-  put_str("task has been created \n");
+  // put_str(buf);
+  // put_str("task has been created \n");
   // process_start(taskP);
   // process_start(taskC2);
   // process_start(taskC1);
-  process_start(taskC);
-  put_str("task has been ready \n");
+  // process_start(taskC);
+  // put_str("task has been ready \n");
 
+  // put_str(itoa(321, buf, 10));
+  // put_str("\n");
+  // itoa(-123, buf, 10);
+  // put_str(buf);
+  // put_str("\n");
+  // put_str(itoa(11, buf, 16));
+  // put_str("\n");
+  // put_str(itoa(-1, buf, 16));
+  // put_str("\n");
+
+  // svsprintf();
   interrupt_enable();
 
   while (1)
     ;
 }
-void print()
-{
-  while (1)
-  {
-    put_str("hellp");
-    sleep(5);
-  }
-}
+
+
 void consumerA()
 {
 
@@ -57,7 +69,7 @@ void consumerA()
     {
       put_str(" A:");
       put_char(ioqueue_getchar(&ioq));
-      thread_yield();// 若 buf size 太小，不加 yield 的话在前的消费者会直接消费完所有字符，导致在后的消费者一直无法获取字符串
+      thread_yield(); // 若 buf size 太小，不加 yield 的话在前的消费者会直接消费完所有字符，导致在后的消费者一直无法获取字符串
     }
     interrupt_set_status(old_status);
   }
