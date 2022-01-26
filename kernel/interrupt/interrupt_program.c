@@ -15,6 +15,7 @@ struct interrupt_program
 struct interrupt_program interrupt_program_table[IDT_DESC_CNT];
 
 static void general_interrupt_handler(uint8_t ver_nr);
+static void page_fault_handler();
 
 // 设置中断处理程序
 void interrupt_program_init(void)
@@ -39,7 +40,8 @@ void interrupt_program_init(void)
     interrupt_program_table[11].name = "#NP Segment Not Present";
     interrupt_program_table[12].name = "#SS Stack Fault Exception";
     interrupt_program_table[13].name = "#GP General Protection Exception";
-    interrupt_program_table[14].name = "#PF Page-Fault Exception";
+    // interrupt_program_table[14].name = "#PF Page-Fault Exception";
+    interrupt_program_register(14,"#PF Page-Fault Exception",page_fault_handler);
     // interrupt_program_table[15] 第15项是intel保留项，未使用
     interrupt_program_table[16].name = "#MF x87 FPU Floating-Point Error";
     interrupt_program_table[17].name = "#AC Alignment Check Exception";
@@ -68,17 +70,26 @@ static void general_interrupt_handler(uint8_t ver_nr)
     put_str(interrupt_program_table[ver_nr].name);
     put_str("\n");
 
+    // 能进入中断处理程序就表示已经处在关中断情况下
+    // 不会出现调度进程的情况。故下面的循环不会再被中断
+    while (1)
+        ;
+}
+
+static void page_fault_handler()
+{
+    put_str("\nint vector: 0xe");
+    put_str("\ninterrupt name: #PF Page-Fault Exception\n");
     // 若为 Pagefault，打印缺失的地址
     // Pagefault 时缺失地址暂存在 cr2 寄存器
-    if (ver_nr == 14)
-    {
-        int32_t page_fault_vaddr = 0;
-        asm("movl %%cr2,%0"
-            : "=r"(page_fault_vaddr));
-        put_str("page fault addr is: ");
-        put_int(page_fault_vaddr);
-        put_str("\n");
-    }
+
+    int32_t page_fault_vaddr = 0;
+    asm("movl %%cr2,%0"
+        : "=r"(page_fault_vaddr));
+    put_str("page fault addr is: ");
+    put_int(page_fault_vaddr);
+    put_str("\n");
+
     // 能进入中断处理程序就表示已经处在关中断情况下
     // 不会出现调度进程的情况。故下面的循环不会再被中断
     while (1)
