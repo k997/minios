@@ -106,19 +106,27 @@ static void *page_alloc_from(pool_flag pf, uint32_t addr, uint32_t cnt)
         return NULL;
 
     /* 虚拟地址连续，但物理地址可以不连续，所以逐个做映射*/
-    uint32_t __cnt = cnt;
+    // 剩余未分配的页面数
+    uint32_t left_pg_cnt = cnt;
     // 若随机申请内存，addr 可能是 RANDOM_PAGE_ADDR, 此处必须重新赋值
     addr = (uint32_t)vaddr_start;
-    while (__cnt-- > 0)
+    while (left_pg_cnt > 0)
     {
         void *paddr = physical_page_alloc(pf, 1);
         if (paddr == NULL)
         {
-            // 分配失败应全部释放已分配的内存,此处暂未实现
+            /* 分配失败应全部释放已分配内存 */
+            // 释放已成功分配的内存
+            uint32_t success_alloced_pg_cnt = cnt - left_pg_cnt;
+            page_free(vaddr_start, success_alloced_pg_cnt);
+            // 释放虚拟内存并跳过已经在 page_free 中释放的虚拟内存
+            uint32_t no_free_vaddr_start = vaddr_start + success_alloced_pg_cnt * PG_SIZE;
+            virtual_page_free(no_free_vaddr_start, left_pg_cnt);
             return NULL;
         }
         map_vaddr2phyaddr((void *)addr, paddr);
         addr += PG_SIZE;
+        left_pg_cnt--;
     }
     // 分配后所有页框清零
     memset(vaddr_start, 0, cnt * PG_SIZE);
@@ -149,6 +157,7 @@ static void *pool_page_alloc_from(pool *current_pool, uint32_t addr, uint32_t cn
     }
     else
     {
+        /* 从指定地址申请内存，地址已知，无需再次计算地址 */
         bit_index_start = (addr - current_pool->addr_start) / PG_SIZE / 8;
         ASSERT(bit_index_start > 0);
         bit_index_start = bitmap_alloc_from(&(current_pool->btmp), bit_index_start, cnt);
