@@ -23,8 +23,6 @@ typedef struct
                          // 若为虚拟内存池，则设置为 MEM_MAX_SIZE
 } pool;
 
-
-
 // 外部引用声明
 extern pool kernel_virtual_pool;
 void mem_init(void);
@@ -35,4 +33,6 @@ void *user_page_alloc(uint32_t cnt);
 void *user_page_alloc_from(uint32_t addr, uint32_t cnt);
 uint32_t vaddr2paddr(uint32_t vaddr);
 void page_free(void *addr, uint32_t cnt);
+void *sys_malloc(uint32_t size);
+void sys_free(void *ptr);
 #endif
