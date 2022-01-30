@@ -120,7 +120,7 @@ static void *page_alloc_from(pool_flag pf, uint32_t addr, uint32_t cnt)
             uint32_t success_alloced_pg_cnt = cnt - left_pg_cnt;
             page_free(vaddr_start, success_alloced_pg_cnt);
             // 释放虚拟内存并跳过已经在 page_free 中释放的虚拟内存
-            uint32_t no_free_vaddr_start = vaddr_start + success_alloced_pg_cnt * PG_SIZE;
+            uint32_t no_free_vaddr_start = (uint32_t)vaddr_start + success_alloced_pg_cnt * PG_SIZE;
             virtual_page_free(no_free_vaddr_start, left_pg_cnt);
             return NULL;
         }
