@@ -37,7 +37,7 @@ static inline uint8_t inb(uint16_t port)
 （3）方向指令 cld 和 std
 */
 
-// addr 处的 word_cnt 字节写入 port
+// addr 处的 word_cnt 字写入 port
 static inline void outsw(uint16_t port, const void *addr, uint32_t word_cnt)
 {
     //cld ，清除方向标志（DF），制定地址增长方向
@@ -52,7 +52,7 @@ static inline void outsw(uint16_t port, const void *addr, uint32_t word_cnt)
         : "d"(port));
 }
 
-// addr 处的 word_cnt 字节写入 port
+// addr 处的 word_cnt 字写入 port
 static inline void insw(uint16_t port, const void *addr, uint32_t word_cnt)
 {
     //cld ，清除方向标志（DF），制定地址增长方向
@@ -64,7 +64,7 @@ static inline void insw(uint16_t port, const void *addr, uint32_t word_cnt)
     asm volatile(
         "cld;rep insw"
         : "+D"(addr), "+c"(word_cnt)
-        : "d"(port));
+        : "d"(port):"memory");
 }
 
 #endif
