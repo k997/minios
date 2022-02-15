@@ -9,7 +9,7 @@
 void pic_init(void)
 {
   // ICW1
-  outb(PIC_M_CTRL, 0x11); // 第 1 位 SNGL 置为 0，表示级联级联 8259
+  outb(PIC_M_CTRL, 0x11); // 第 1 位 SNGL 置为 0，表示级联 8259
                           // 第 3 位的 LTIM 为 0，表示边沿触发
                           // 第 4 位是固定为 1,需要 ICW4
   // ICW2
@@ -35,10 +35,14 @@ void pic_init(void)
   // ICW4
   outb(PIC_S_DATA, 0x01); // 同主片
 
-  // OCW1 设置 IMR 寄存器
-  // 0 表示不屏蔽, 1 表示屏蔽。
-  // 打开主片上 IR0,也就是目前只接受时钟产生的中断
-  outb(PIC_M_DATA, 0xfe); // 0xfe,即 1111 1110b
-  // 从片全部屏蔽
-  outb(PIC_S_DATA, 0xff);
+
+  /*   
+  OCW1 设置 IMR 寄存器
+  0 表示不屏蔽, 1 表示屏蔽。
+  打开主片上 IR0 时钟中断
+  打开主片上 IR2 响应从片中断
+   */
+  outb(PIC_M_DATA, 0xfa); // 1111 1010b
+  // 从片打开 IR14 IR15接受硬盘中断
+  outb(PIC_S_DATA, 0x3f); // 0011 1111b
 }
