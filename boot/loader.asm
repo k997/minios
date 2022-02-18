@@ -105,7 +105,8 @@ p_mode_start:
     mov ebx,KERNEL_BIN_BASE_ADDR  ; 载入的内存地址
     mov ecx,200 ; 待读入的扇区数
     call read_disk_m_32
-
+    ; 开启 sse
+    call enable_sse
     ; 跳转到内核
     call kernel_init
     mov esp, 0xc009f000
@@ -114,3 +115,4 @@ p_mode_start:
 %include "paging.asm"
 %include "kernel_init.asm"
 %include "read_disk.asm"
+%include "sse.asm"
