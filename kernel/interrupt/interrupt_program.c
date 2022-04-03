@@ -41,7 +41,7 @@ void interrupt_program_init(void)
     interrupt_program_table[12].name = "#SS Stack Fault Exception";
     interrupt_program_table[13].name = "#GP General Protection Exception";
     // interrupt_program_table[14].name = "#PF Page-Fault Exception";
-    interrupt_program_register(14,"#PF Page-Fault Exception",page_fault_handler);
+    interrupt_program_register(14, "#PF Page-Fault Exception", page_fault_handler);
     // interrupt_program_table[15] 第15项是intel保留项，未使用
     interrupt_program_table[16].name = "#MF x87 FPU Floating-Point Error";
     interrupt_program_table[17].name = "#AC Alignment Check Exception";
@@ -52,14 +52,14 @@ void interrupt_program_init(void)
 // 注册中断处理程序
 void interrupt_program_register(uint8_t ver_nr, char *name, interrupt_handler handler)
 {
-    strcpy(interrupt_program_table[ver_nr].name, name);
+    interrupt_program_table[ver_nr].name = name;
     interrupt_program_table[ver_nr].handler = handler;
 }
 static void general_interrupt_handler(uint8_t ver_nr)
 {
-    //IRQ7 和 IRQ15 会产生伪中断，无需处理
-    // 0x27 = 0010 0111 b
-    //0x2f 是从片 8259A 上的最后一个 IRQ 引脚，保留项
+    // IRQ7 和 IRQ15 会产生伪中断，无需处理
+    //  0x27 = 0010 0111 b
+    // 0x2f 是从片 8259A 上的最后一个 IRQ 引脚，保留项
     if (ver_nr == 0x27 || ver_nr == 0x2f)
     {
         return;
@@ -95,4 +95,3 @@ static void page_fault_handler()
     while (1)
         ;
 }
-
