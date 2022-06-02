@@ -19,7 +19,6 @@
 #include "interrupt.h"
 
 #define DISK_CNT_PTR 0x475
-#define SECTOER_SIZE 512
 
 /* 定义硬盘各寄存器的端口号 */
 #define reg_data(channel) (channel->port_base + 0)
@@ -163,7 +162,7 @@ void disk_read(disk *hd, void *buf, uint32_t lba, uint8_t sector_cnt)
             PANIC(error);
         }
 
-        channel_read(ch, (void *)((uint32_t)buf + sector_done * SECTOER_SIZE), sector_op);
+        channel_read(ch, (void *)((uint32_t)buf + sector_done * SECTOR_SIZE), sector_op);
         sector_done += sector_op;
     }
 
@@ -197,7 +196,7 @@ void disk_write(disk *hd, void *buf, uint32_t lba, uint8_t sector_cnt)
             sprintf(error, "%s write sectors %d faild!\n", hd->name, lba + sector_done);
             PANIC(error);
         }
-        channel_write(ch, (void *)((uint32_t)buf + sector_done * SECTOER_SIZE), sector_op);
+        channel_write(ch, (void *)((uint32_t)buf + sector_done * SECTOR_SIZE), sector_op);
         // 硬盘响应期间阻塞线程，由硬盘的中断处理程序唤醒
         sema_down(&ch->disk_done);
         sector_done += sector_op;
@@ -265,9 +264,9 @@ static void channel_read(ide_channel *ch, void *buf, uint8_t sector_cnt)
      */
     uint32_t size_in_byte;
     if (sector_cnt == 0)
-        size_in_byte = 256 * SECTOER_SIZE;
+        size_in_byte = 256 * SECTOR_SIZE;
     else
-        size_in_byte = sector_cnt * SECTOER_SIZE;
+        size_in_byte = sector_cnt * SECTOR_SIZE;
     // insw 单位为字 16 字节
     insw(reg_data(ch), buf, size_in_byte / 2);
 }
@@ -281,9 +280,9 @@ static void channel_write(ide_channel *ch, void *buf, uint8_t sector_cnt)
      */
     uint32_t size_in_byte;
     if (sector_cnt == 0)
-        size_in_byte = 256 * SECTOER_SIZE;
+        size_in_byte = 256 * SECTOR_SIZE;
     else
-        size_in_byte = sector_cnt * SECTOER_SIZE;
+        size_in_byte = sector_cnt * SECTOR_SIZE;
     // insw 单位为字 16 字节
     outsw(reg_data(ch), buf, size_in_byte / 2);
 }

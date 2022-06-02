@@ -5,6 +5,9 @@
 #include "sync.h"
 #include "list.h"
 
+#define SECTOR_SIZE 512
+
+
 #define CHANNEL_CNT 2
 #define DISK_CNT_PER_CHANNEL 2
 #define IDE_NAME_LEN 16
