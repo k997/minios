@@ -53,9 +53,5 @@ dkms.conf
 
 *.img
 *.bin
-.vscode
-.vscode/*
-.vscode/settings.json
-bochs/build/**
-.gitignore
-.vscode/settings.json
+.**/
+build/
