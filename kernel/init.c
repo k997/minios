@@ -6,6 +6,7 @@
 #include "thread.h"
 #include "gdt.h"
 #include "syscall.h"
+#include "ide.h"
 
 void init_all()
 {
@@ -36,4 +37,8 @@ void init_all()
   put_str("syscall init\n");
   syscall_init();
   put_str("syscall init done\n");
+
+  put_str("ide init\n");
+  ide_init();
+  put_str("ide init done\n");
 }
