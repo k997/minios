@@ -1,11 +1,13 @@
 TOP_DIR := $(shell pwd)
-BUILD_DIR = $(TOP_DIR)/bochs/build
+BOCHS_DIR = $(TOP_DIR)
+BUILD_DIR = $(TOP_DIR)/build
 BOOTLOADER_DIR = $(TOP_DIR)/boot
 KERNEL_DIR = $(TOP_DIR)/kernel
 
 SUB_DIR = $(BOOTLOADER_DIR) $(KERNEL_DIR) 
 
-BOCHS_DISK = $(TOP_DIR)/bochs/os.img
+
+BOCHS_DISK = $(BOCHS_DIR)/os.img
 
 AS = yasm
 CC = gcc
@@ -18,6 +20,7 @@ export CC AS TOP_DIR BUILD_DIR KERNEL_DIR
 
 mk_dir:
 # - 允许失败
+	-mkdir -p $(BOCHS_DIR)
 	-mkdir -p $(BUILD_DIR)
 
 build:
