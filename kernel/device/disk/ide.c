@@ -388,6 +388,7 @@ void partition_scan(struct disk *hd, uint32_t ext_lba)
 
             break;
         default: /* 有效的分区类型 */
+        {
             partition *ppart;
             // 分区名 = 硬盘名+分区序号，如 sda1
             // 0-4 为 主分区，逻辑分区从 5 开始
@@ -411,6 +412,7 @@ void partition_scan(struct disk *hd, uint32_t ext_lba)
             list_append(&partition_list, &ppart->partition_tag);
 
             break;
+        }
         }
     }
     sys_free(bs);
