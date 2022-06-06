@@ -11,6 +11,8 @@ void mem_init()
 /* malloc 系统调用，申请 size 字节内存 */
 void *sys_malloc(uint32_t size)
 {
+    if (size > PG_SIZE)
+        return NULL;
     void *addr = NULL;
     task_struct *current_thread = thread_running();
 
