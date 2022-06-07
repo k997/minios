@@ -5,8 +5,9 @@
 #include "sync.h"
 #include "list.h"
 
-#define SECTOR_SIZE 512
-
+#define SECTOR_SIZE 512                              // 扇区大小
+#define BLOCK_SIZE 1024                              // 块字节大小
+#define SECTORS_PER_BLOCK (BLOCK_SIZE / SECTOR_SIZE) // 每个块的扇区数
 
 #define CHANNEL_CNT 2
 #define DISK_CNT_PER_CHANNEL 2
@@ -18,7 +19,6 @@
 #define PRIMARY_PARTS_CNT 4
 // 逻辑分区数量
 #define LOGIC_PARTS_CNT 8
-
 
 /* 分区表中的每个表项, 大小为 16 字节 */
 struct partition_table_entry
@@ -42,11 +42,11 @@ typedef struct partition_table_entry partition_table_entry;
 /* 512 字节引导扇区,可以是 mbr，ebr，obr 等 */
 struct boot_sector
 {
-    uint8_t other[446];                       // 引导代码, 此处用于占位
+    uint8_t other[446];                                               // 引导代码, 此处用于占位
     partition_table_entry partition_table[PARTITION_TABLE_ENTRY_CNT]; // 64 字节分区表（16字节*4分区表项）
-    uint16_t singnature;                      // 0x55，0xaa
-                                              // x86 小端字节序，实际为 0xaa55
-} __attribute__((packed));                    // 保证结构体大小为 512 字节
+    uint16_t singnature;                                              // 0x55，0xaa
+                                                                      // x86 小端字节序，实际为 0xaa55
+} __attribute__((packed));                                            // 保证结构体大小为 512 字节
 /* 512 字节引导扇区,可以是 mbr，ebr，obr 等 */
 typedef struct boot_sector boot_sector;
 
@@ -60,14 +60,12 @@ typedef struct partition
     list_elem partition_tag;     // 队列中管理分区的标记
 } partition;
 
-
 /* 通道中主盘还是从盘 */
 typedef enum ide_device
 {
     DISK_PRIMARY = 0,
     DISK_SECONDARY = 1
 } ide_device;
-
 
 /* 硬盘 */
 typedef struct disk
@@ -91,14 +89,13 @@ typedef struct ide_channel
     struct disk device[DISK_CNT_PER_CHANNEL]; // 每个通道可连接主从 2 个硬盘
 } ide_channel;
 
-
 extern list partition_list;
 extern uint8_t channel_cnt;
 extern ide_channel channels[];
 
 void ide_init();
-void disk_read(disk *hd, void *buf, uint32_t lba, uint8_t sector_cnt);
-void disk_write(disk *hd, void *buf, uint32_t lba, uint8_t sector_cnt);
+void disk_read(disk *hd, void *buf, uint32_t lba, uint32_t block_cnt);
+void disk_write(disk *hd, void *buf, uint32_t lba, uint32_t block_cnt);
 void identify_disk(disk *hd);
 void partition_scan(struct disk *hd, uint32_t ext_lba);
 bool partition_info(list_elem *pelem, int arg __attribute__((unused)));

@@ -127,9 +127,10 @@ void ide_init()
     list_traversal(&partition_list, partition_info, (int)NULL);
 }
 
-void disk_read(disk *hd, void *buf, uint32_t lba, uint8_t sector_cnt)
+void disk_read(disk *hd, void *buf, uint32_t lba, uint32_t block_cnt)
 {
-    ASSERT(sector_cnt > 0);
+    ASSERT(block_cnt > 0);
+    uint32_t sector_cnt = block_cnt * SECTORS_PER_BLOCK;
     ide_channel *ch = hd->belong_to_channel;
     lock_acquire(&ch->lock);
     set_disk(ch, hd->device);
@@ -169,9 +170,10 @@ void disk_read(disk *hd, void *buf, uint32_t lba, uint8_t sector_cnt)
     lock_release(&ch->lock);
 }
 
-void disk_write(disk *hd, void *buf, uint32_t lba, uint8_t sector_cnt)
+void disk_write(disk *hd, void *buf, uint32_t lba, uint32_t block_cnt)
 {
-    ASSERT(sector_cnt > 0);
+    ASSERT(block_cnt > 0);
+    uint32_t sector_cnt = block_cnt * SECTORS_PER_BLOCK;
     ide_channel *ch = hd->belong_to_channel;
     lock_acquire(&ch->lock);
     set_disk(ch, hd->device);
@@ -283,7 +285,7 @@ static void channel_write(ide_channel *ch, void *buf, uint8_t sector_cnt)
         size_in_byte = 256 * SECTOR_SIZE;
     else
         size_in_byte = sector_cnt * SECTOR_SIZE;
-    // insw 单位为字 16 字节
+    // outsw 单位为字 16 字节
     outsw(reg_data(ch), buf, size_in_byte / 2);
 }
 
