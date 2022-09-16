@@ -16,7 +16,7 @@ LD = ld
 
 export CC AS TOP_DIR BUILD_DIR KERNEL_DIR
 
-.PHONY : mk_dir hd clean build all
+.PHONY : mk_dir hd clean build all run
 
 mk_dir:
 # - 允许失败
@@ -39,7 +39,9 @@ hd:
 clean:
 	cd $(BUILD_DIR) && rm -rf ./*
 
-
+bochs_run:
+	bochs -f bochs.bxrc
+run: all bochs_run
 
 all: mk_dir build hd
 
