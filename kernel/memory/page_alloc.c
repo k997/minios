@@ -52,7 +52,7 @@ static lock kernel_pool_lock, user_pool_lock;
 static void *physical_page_alloc(pool_flag pf, uint32_t cnt);
 static void *virtual_page_alloc_from(pool_flag pf, uint32_t addr, uint32_t cnt);
 static void map_vaddr2phyaddr(void *_vaddr, void *_phyaddr);
-static void *page_alloc_from(pool_flag pf, uint32_t addr, uint32_t cnt);
+static void *__page_alloc_from(pool_flag pf, uint32_t addr, uint32_t cnt);
 static void *pool_page_alloc_from(pool *current_pool, uint32_t addr, uint32_t cnt);
 static uint32_t *pde_ptr(uint32_t vaddr);
 static uint32_t *pte_ptr(uint32_t vaddr);
@@ -63,10 +63,24 @@ static void pool_page_free(pool *current_pool, uint32_t addr, uint32_t cnt);
 static void physical_page_free(uint32_t addr, uint32_t cnt);
 static void virtual_page_free(uint32_t addr, uint32_t cnt);
 
+void *page_alloc(uint32_t pg_cnt)
+{
+    task_struct *current_thread = thread_running();
+    if (current_thread->pgdir == NULL)
+        return kernel_page_alloc(pg_cnt);
+    return user_page_alloc(pg_cnt);
+}
+void *page_alloc_from(uint32_t addr, uint32_t pg_cnt)
+{
+    task_struct *current_thread = thread_running();
+    if (current_thread->pgdir == NULL)
+        return kernel_page_alloc_from(addr, pg_cnt);
+    return user_page_alloc_from(addr, pg_cnt);
+}
 void *kernel_page_alloc(uint32_t cnt)
 {
     lock_acquire(&kernel_pool_lock);
-    void *vaddr = page_alloc_from(PF_KERNEL, RANDOM_PAGE_ADDR, cnt);
+    void *vaddr = __page_alloc_from(PF_KERNEL, RANDOM_PAGE_ADDR, cnt);
     lock_release(&kernel_pool_lock);
     return vaddr;
 }
@@ -74,7 +88,7 @@ void *kernel_page_alloc(uint32_t cnt)
 void *kernel_page_alloc_from(uint32_t addr, uint32_t cnt)
 {
     lock_acquire(&kernel_pool_lock);
-    void *vaddr = page_alloc_from(PF_KERNEL, addr, cnt);
+    void *vaddr = __page_alloc_from(PF_KERNEL, addr, cnt);
     lock_release(&kernel_pool_lock);
     return vaddr;
 }
@@ -82,7 +96,7 @@ void *kernel_page_alloc_from(uint32_t addr, uint32_t cnt)
 void *user_page_alloc(uint32_t cnt)
 {
     lock_acquire(&user_pool_lock);
-    void *vaddr = page_alloc_from(PF_USER, RANDOM_PAGE_ADDR, cnt);
+    void *vaddr = __page_alloc_from(PF_USER, RANDOM_PAGE_ADDR, cnt);
     lock_release(&user_pool_lock);
     return vaddr;
 }
@@ -90,7 +104,7 @@ void *user_page_alloc(uint32_t cnt)
 void *user_page_alloc_from(uint32_t addr, uint32_t cnt)
 {
     lock_acquire(&user_pool_lock);
-    void *vaddr = page_alloc_from(PF_USER, addr, cnt);
+    void *vaddr = __page_alloc_from(PF_USER, addr, cnt);
     lock_release(&user_pool_lock);
     return vaddr;
 }
@@ -99,7 +113,7 @@ void *user_page_alloc_from(uint32_t addr, uint32_t cnt)
     从 addr 起申请连续 cnt 页内存
     申请成功返回内存页起始地址，失败返回 NULL
  */
-static void *page_alloc_from(pool_flag pf, uint32_t addr, uint32_t cnt)
+static void *__page_alloc_from(pool_flag pf, uint32_t addr, uint32_t cnt)
 {
     void *vaddr_start = virtual_page_alloc_from(pf, addr, cnt);
     if (vaddr_start == NULL)
@@ -304,22 +318,24 @@ static void physical_mem_pool_init()
 void page_free(void *addr, uint32_t cnt)
 {
     uint32_t __paddr, __vaddr = (uint32_t)addr;
-    ASSERT(__vaddr % PG_SIZE == 0);
-    // addr 地址不是自然页起始地址
-    if (__vaddr % PG_SIZE != 0)
-        return;
+    // addr 地址必须是自然页起始地址
+    ASSERT(cnt >= 1 && __vaddr % PG_SIZE == 0);
+    /* 确保待释放的物理内存在低端 1MB+1KB 大小的页目录+1KB 大小的页表地址范围外 */
+    __paddr = vaddr2paddr(__vaddr);
+    ASSERT((__paddr % PG_SIZE) == 0 && __paddr >= 0x102000);    
     // 释放虚拟地址
     virtual_page_free(__vaddr, cnt);
     // 物理内存不连续，逐页释放物理内存
     uint32_t i;
     for (i = 0; i < cnt; i++)
     {
-        __paddr = vaddr2paddr(__vaddr + PG_SIZE * i);
-
+        __paddr = vaddr2paddr(__vaddr);
         physical_page_free(__paddr, 1);
         // 删除页表
-        unmap_vaddr2phyaddr(__vaddr + PG_SIZE * i);
+        unmap_vaddr2phyaddr(__vaddr);
+        __vaddr += PG_SIZE;
     }
+
 }
 
 // 从虚拟地址池释放 addr 起连续 cnt 页内存
