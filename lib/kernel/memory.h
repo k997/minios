@@ -72,4 +72,7 @@ uint32_t vaddr2paddr(uint32_t vaddr);
 void page_free(void *addr, uint32_t cnt);
 void *sys_malloc(uint32_t size);
 void sys_free(void *ptr);
+
+void mem_bin_init(mem_bin mb[]);
+void kernel_mem_bin_init();
 #endif

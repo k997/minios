@@ -16,6 +16,7 @@ task_struct *process_create(char *name,void *program)
     task_struct *pthread = thread_create(name, default_prio, run_program, program);
     pthread->pgdir = process_page_dir_create();
     process_vaddr_init(&pthread->vaddr);
+    mem_bin_init(pthread->mb);
     return pthread;
 }
 

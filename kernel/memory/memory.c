@@ -1,5 +1,4 @@
 #include "memory.h"
-#include "bitmap.h"
 #include "thread.h"
 #include "global.h"
 #include "debug.h"
@@ -7,7 +6,10 @@
 void mem_init()
 {
     mem_pool_init();
+    kernel_mem_bin_init();
 }
+
+
 /* malloc 系统调用，申请 size 字节内存 */
 void *sys_malloc(uint32_t size)
 {
