@@ -97,9 +97,10 @@ typedef struct task_struct
     list_elem thread_status_list_tag; // 线程状态队列的节点
     list_elem thread_all_list_tag;    // 全部线程队列的节点
 
-    uint32_t *pgdir;      // 进程页表地址, 若是线程则为 NULL
-                          // 页目录项和 uint32_t 都是四字节, 方便操作页表
-    pool vaddr;
+    uint32_t *pgdir;      /* 进程页表地址, 若是线程则为 NULL
+                   页目录项和 uint32_t 都是四字节, 方便操作页表*/
+    pool vaddr;           /* 标记内存映射情况 */
+    mem_bin mb[BIN_CNT];  // 用户进程内存块描述符
     uint32_t stack_magic; // PCB 的边界标记,用于检测栈的溢出, 防止栈内容覆盖 PCB 其他信息
                           // 该值为自定义的 magic number, 若 PCB 边界等于该值, 则说明 PCB 数据没有被栈覆盖
 } task_struct;
