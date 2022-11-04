@@ -11,7 +11,7 @@ LD_OBJS := $(filter-out $(MAIN_OBJ),$(OBJS))
 ENTRY_POINT = 0xc0001500
 # -c 只编译不链接，否则报错，-fno-builtin不适用c语言内置函数  -mno-sse -mno-sse2  禁用浮点运算
 CFLAGS =  -m32 -fno-builtin -fno-stack-protector -mno-sse -mno-sse2 -c -MMD -MP
-LDFLAGS = -m32 -fno-builtin -nostdlib -Ttext $(ENTRY_POINT) -e main  -Wl,-Map=$(BUILD_DIR)/kernel.map -mgeneral-regs-only -mno-sse
+LDFLAGS = -m32 -fno-builtin -nostdlib -T kernel.lds  -Wl,-Map=$(BUILD_DIR)/kernel.map -mgeneral-regs-only -mno-sse
 ASFLAGS = -f elf32
 
 C_INCLUDE = -I $(TOP_DIR)/lib -I $(TOP_DIR)/lib/kernel -I $(TOP_DIR)/lib/device
