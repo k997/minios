@@ -76,9 +76,9 @@ void ide_init()
     uint8_t hd_cnt = *((uint8_t *)DISK_CNT_PTR); // 获取硬盘数量
 
     // BUG! bios初始化时将硬盘数量写入地址 0x475 处，加载内核时该处内容被内核覆盖
-    // ASSERT(hd_cnt > 0);
+    ASSERT(hd_cnt > 0);
     channel_cnt = DIV_ROUND_UP(hd_cnt, DISK_CNT_PER_CHANNEL); // 根据硬盘数量获取通道数量
-    // printk("%d disks found!\n", hd_cnt);
+    printk("%d disks found!\n", hd_cnt);
 
     list_init(&partition_list);
     ide_channel *ch_ptr;
@@ -116,13 +116,13 @@ void ide_init()
             hd->device = hd_idx;
             sprintf(hd->name, "sd%c", 'a' + ch_idx * 2 + hd_idx);
             // 状态寄存器为 0 说明硬盘不存在
-            if (inb(reg_alt_status(hd->belong_to_channel)) != 0)
-            {
-                identify_disk(hd);
-                partition_scan(hd, 0);
-            }
+            if (inb(reg_alt_status(hd->belong_to_channel)) == 0)
+                continue;
+            identify_disk(hd);
+            partition_scan(hd, 0);
         }
     }
+
     printk("\nall partition info\n");
     list_traversal(&partition_list, partition_info, (int)NULL);
 }
@@ -166,7 +166,6 @@ void disk_read(disk *hd, void *buf, uint32_t lba, uint32_t block_cnt)
         channel_read(ch, (void *)((uint32_t)buf + sector_done * SECTOR_SIZE), sector_op);
         sector_done += sector_op;
     }
-
     lock_release(&ch->lock);
 }
 
@@ -362,12 +361,15 @@ void identify_disk(disk *hd)
 void partition_scan(struct disk *hd, uint32_t ext_lba)
 {
     // 此处必须从堆中申请内存，否则递归查找扇区时可能导致栈溢出
-    boot_sector *bs = sys_malloc(sizeof(boot_sector));
+    // boot_sector *bs = sys_malloc(sizeof(boot_sector));
+    boot_sector *bs = page_alloc(1);
     disk_read(hd, bs, ext_lba, 1);
+    
 
     partition_table_entry *p_entry;
     uint8_t part_idx = 0;
-    for (part_idx = 0, p_entry = bs->partition_table; part_idx++ < PARTITION_TABLE_ENTRY_CNT; part_idx++, p_entry++) /* 每个分区表共 4 个表项 */
+    /* 每个分区表共 4 个表项 */
+    for (part_idx = 0, p_entry = bs->partition_table; part_idx++ < PARTITION_TABLE_ENTRY_CNT; part_idx++, p_entry++)
     {
         switch (p_entry->fs_type)
         {
@@ -416,7 +418,8 @@ void partition_scan(struct disk *hd, uint32_t ext_lba)
         }
         }
     }
-    sys_free(bs);
+    // sys_free(bs);
+    page_free(bs,1);
 }
 
 bool partition_info(list_elem *pelem, int arg __attribute__((unused)))
