@@ -34,6 +34,4 @@
 #define EFLAGS_IOPL_3 (3 << 12)
 #define EFLAGS_IOPL_0 (0 << 12)
 
-// 除法向上取整
-#define DIV_ROUND_UP(X, STEP) ((X + STEP - 1) / (STEP))
 #endif

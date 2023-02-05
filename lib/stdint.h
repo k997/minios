@@ -15,4 +15,7 @@ typedef unsigned long long int uint64_t;
 #define true 1
 #define false 0
 
+// 除法向上取整
+#define DIV_ROUND_UP(X, STEP) ((X + STEP - 1) / (STEP))
+
 #endif
