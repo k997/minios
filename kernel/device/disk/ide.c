@@ -361,8 +361,8 @@ void identify_disk(disk *hd)
 void partition_scan(struct disk *hd, uint32_t ext_lba)
 {
     // 此处必须从堆中申请内存，否则递归查找扇区时可能导致栈溢出
-    // boot_sector *bs = sys_malloc(sizeof(boot_sector));
-    boot_sector *bs = page_alloc(1);
+    // disk_read 按块读写，必须申请足够大小的 buf 
+    boot_sector *bs = sys_malloc(BLOCK_SIZE);
     disk_read(hd, bs, ext_lba, 1);
     
 
@@ -418,8 +418,7 @@ void partition_scan(struct disk *hd, uint32_t ext_lba)
         }
         }
     }
-    // sys_free(bs);
-    page_free(bs,1);
+    sys_free(bs);
 }
 
 bool partition_info(list_elem *pelem, int arg __attribute__((unused)))
