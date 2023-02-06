@@ -101,7 +101,7 @@ static void init_superblock_for_raw_partition(superblock *sb, const partition *p
     uint32_t super_block_blks = 1;
 
     uint32_t inode_bitmap_block_cnt =
-        DIV_ROUND_UP(MAX_FILE_NAME_LEN, BITS_PER_BLOCK);
+        DIV_ROUND_UP(MAX_FILES_PER_PART, BITS_PER_BLOCK);
 
     uint32_t inode_table_size = sizeof(struct inode) * MAX_FILES_PER_PART;
     uint32_t inode_table_block_cnt = DIV_ROUND_UP(inode_table_size,
