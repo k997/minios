@@ -5,8 +5,10 @@
 #include "memory.h"
 
 #define THREAD_STACK_MAGIC_NUM 0x19870916
-// 自定义通用函数类型,在多线程函数中作为形参
+// 每个任务可打开的最大文件数量
+#define MAX_FILES_OPEN_PER_PROC 8
 
+// 自定义通用函数类型,在多线程函数中作为形参
 typedef void thread_func(void *);
 
 typedef enum task_status
@@ -101,6 +103,7 @@ typedef struct task_struct
                    页目录项和 uint32_t 都是四字节, 方便操作页表*/
     pool vaddr;           /* 标记内存映射情况 */
     mem_bin mb[BIN_CNT];  // 用户进程内存块描述符
+    int32_t fd_table[MAX_FILES_OPEN_PER_PROC]; // 文件描述符数组
     uint32_t stack_magic; // PCB 的边界标记,用于检测栈的溢出, 防止栈内容覆盖 PCB 其他信息
                           // 该值为自定义的 magic number, 若 PCB 边界等于该值, 则说明 PCB 数据没有被栈覆盖
 } task_struct;

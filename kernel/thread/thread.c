@@ -39,6 +39,16 @@ task_struct *thread_create(char *name, int priority, thread_func func, void *fun
     thread->ticks = priority;
     thread->elapsed_ticks = 0;
     thread->pgdir = NULL;
+    /* 预留标准输入输出*/
+    thread->fd_table[0] = 0;
+    thread->fd_table[1] = 1;
+    thread->fd_table[2] = 2;
+    uint32_t i;
+    for (i = 3; i < MAX_FILES_OPEN_PER_PROC; i++)
+    {
+        thread->fd_table[-1];
+    }
+
     thread->stack_magic = THREAD_STACK_MAGIC_NUM;
 
     // thread_kstack 预留中断栈及内核栈的栈空间
@@ -78,7 +88,7 @@ void thread_schedule(void)
     ASSERT(interrupt_get_status() == INTR_OFF);
     // 正在运行的线程不在 thread_ready_list 中，只在 thread_all_list 中
     task_struct *current_thread = thread_running();
-    if (current_thread->status == TASK_RUNNING) //时间片到期,当前线程重新加入就绪队列，并重置剩余可运行的时间片
+    if (current_thread->status == TASK_RUNNING) // 时间片到期,当前线程重新加入就绪队列，并重置剩余可运行的时间片
     {
         ASSERT(!list_find_elem(&thread_ready_list, &current_thread->thread_status_list_tag));
         list_append(&thread_ready_list, &current_thread->thread_status_list_tag);
