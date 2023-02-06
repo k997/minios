@@ -48,12 +48,17 @@ struct superblock
     uint32_t inode_table_lba;       // i 结点表起始扇区 lba 地址
     uint32_t inode_table_block_cnt; // i 结点表占用的 字节 长度
 
-    uint32_t data_start_lba; // 数据区开始的第一个扇区号
-    uint32_t root_inode_nr;  // 根目录所在的 i 结点号
-    uint32_t dir_entry_size; // 目录项大小
-
+    uint32_t data_start_lba;          // 数据区开始的第一个扇区号
+    uint32_t root_inode_nr;           // 根目录所在的 i 结点号
+    uint32_t dir_entry_size;          // 目录项大小
+                                      /*
+                                      superblock 在磁盘上占用 BLOCKSIZE 字节（ 1 个块），在内存中占用 sizeof(superblock)
+                                      为了避免 superblock 二者空间不一致导致的读写问题，将 superblock 设置为 blocksize
+                                      disk_read 每次读取 N 块，可能将内存中 superblock 之后的其他数据覆盖
+                                      */
     uint8_t pad[BLOCK_SIZE - 13 * 4]; // 13个字段*4字节
-                                      // 必须为block_size ，主要是为了写回硬盘方便
+                                      // 必须为block_size ，主要是为了读写方便
+
 } __attribute__((packed));
 typedef struct superblock superblock;
 
@@ -75,9 +80,16 @@ typedef struct inode
     struct list_elem inode_tag;
 } inode;
 
+typedef enum bitmap_type
+{
+    INODE_BITMAP, // inode 位图
+    BLOCK_BITMAP  // 块位图
+} bitmap_type;
+
 void init_superblock_for_raw_partition(superblock *sb, const partition *part);
 void fs_init();
 void format_partition(partition *part);
 void format_all_partition();
 void mount_partition(char *partname);
+void bitmap_sync(partition *part, uint32_t idx, bitmap_type btmp_type);
 #endif
