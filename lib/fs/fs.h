@@ -86,7 +86,6 @@ typedef enum bitmap_type
     BLOCK_BITMAP  // 块位图
 } bitmap_type;
 
-void init_superblock_for_raw_partition(superblock *sb, const partition *part);
 void fs_init();
 void format_partition(partition *part);
 void format_all_partition();
