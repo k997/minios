@@ -58,6 +58,10 @@ typedef struct partition
     uint32_t sector_cnt;         // 扇区数
     struct disk *belong_to_disk; // 指针都是 32 位，所以可以编译通过
     list_elem partition_tag;     // 队列中管理分区的标记
+    struct superblock *sb;
+    bitmap block_bitmap;
+    bitmap inode_bitmap;
+    list open_inodes; // 本分区打开的 i 结点队列
 } partition;
 
 /* 通道中主盘还是从盘 */

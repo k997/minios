@@ -14,7 +14,7 @@ CFLAGS =  -m32 -fno-builtin -fno-stack-protector -mno-sse -mno-sse2 -c -MMD -MP
 LDFLAGS = -m32 -fno-builtin -nostdlib -T kernel.lds  -Wl,-Map=$(BUILD_DIR)/kernel.map -mgeneral-regs-only -mno-sse
 ASFLAGS = -f elf32
 
-C_INCLUDE = -I $(TOP_DIR)/lib -I $(TOP_DIR)/lib/kernel -I $(TOP_DIR)/lib/device
+C_INCLUDE = -I $(TOP_DIR)/lib -I $(TOP_DIR)/lib/kernel -I $(TOP_DIR)/lib/device -I $(TOP_DIR)/lib/fs
 
 all: $(BUILD_DIR)/kernel.bin
 

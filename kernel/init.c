@@ -7,6 +7,8 @@
 #include "gdt.h"
 #include "syscall.h"
 #include "ide.h"
+#include "fs.h"
+#include "kstdio.h"
 
 void init_all()
 {
@@ -41,4 +43,9 @@ void init_all()
   put_str("ide init\n");
   ide_init();
   put_str("ide init done\n");
+
+
+  printk("filesystem init\n");
+  fs_init();
+  printk("filesystem init done\n");
 }
