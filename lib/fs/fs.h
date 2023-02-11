@@ -17,12 +17,12 @@ typedef enum FS_TYPE
 } FS_TYPE;
 
 /* 目录结构 */
-struct dir
+typedef struct dir
 {
     struct inode *inode;
-    uint32_t dir_pos;     // 记录在目录 inode 内的偏移
-    uint8_t dir_buf[512]; // 目录的数据缓存
-};
+    uint32_t dir_pos;            // 记录在目录 inode 内的偏移
+    uint8_t dir_buf[BLOCK_SIZE]; // 目录的数据缓存
+} dir;
 
 /* 目录项结构 */
 typedef struct dir_entry
@@ -48,16 +48,16 @@ struct superblock
     uint32_t inode_table_lba;       // i 结点表起始扇区 lba 地址
     uint32_t inode_table_block_cnt; // i 结点表占用的 字节 长度
 
-    uint32_t data_start_lba;          // 数据区开始的第一个扇区号
-    uint32_t root_inode_nr;           // 根目录所在的 i 结点号
-    uint32_t dir_entry_size;          // 目录项大小
-                                      /*
-                                      superblock 在磁盘上占用 BLOCKSIZE 字节（ 1 个块），在内存中占用 sizeof(superblock)
-                                      为了避免 superblock 二者空间不一致导致的读写问题，将 superblock 设置为 blocksize
-                                      disk_read 每次读取 N 块，可能将内存中 superblock 之后的其他数据覆盖
-                                      */
+    uint32_t data_start_lba; // 数据区开始的第一个扇区号
+    uint32_t root_inode_nr;  // 根目录所在的 i 结点号
+    uint32_t dir_entry_size; // 目录项大小
+    /*
+    superblock 在磁盘上占用 BLOCKSIZE 字节（ 1 个块），在内存中占用 sizeof(superblock)
+    为了避免 superblock 二者空间不一致导致的读写问题，将 superblock 设置为 blocksize
+    disk_read 每次读取 N 块，可能将内存中 superblock 之后的其他数据覆盖
+    */
     uint8_t pad[BLOCK_SIZE - 13 * 4]; // 13个字段*4字节
-                                      // 必须为block_size ，主要是为了读写方便
+    // 必须为block_size ，主要是为了读写方便
 
 } __attribute__((packed));
 typedef struct superblock superblock;
