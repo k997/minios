@@ -6,13 +6,12 @@
 #include "kstdio.h"
 #define BITS_PER_BLOCK (8 * BLOCK_SIZE)
 
-
 static bool __format_all(list_elem *e, int arg __attribute__((unused)));
 static void init_superblock_for_raw_partition(superblock *sb, const partition *part);
 
-void format_all_partition(){
+void format_all_partition()
+{
     list_traversal(&partition_list, __format_all, (int)NULL);
-
 }
 static bool __format_all(list_elem *e, int arg __attribute__((unused)))
 {
@@ -36,6 +35,7 @@ void format_partition(partition *part)
     superblock *sb = sys_malloc(sizeof(superblock));
     init_superblock_for_raw_partition(sb, part);
     disk *hd = part->belong_to_disk;
+    // 跳过引导扇区，写入 1 个 block
     disk_write(hd, sb, sb->part_lba_base + 1, 1);
 
     /* 找出数据量最大的元信息，用其尺寸做存储缓冲区*/
@@ -91,12 +91,11 @@ void format_partition(partition *part)
     sys_free(sb);
 }
 
-
 // 为未格式化分区中创建 superblock
 static void init_superblock_for_raw_partition(superblock *sb, const partition *part)
 {
     uint32_t partition_blks = part->sector_cnt / SECTORS_PER_BLOCK;
-
+    // 引导扇区只占一扇区，但预留了一个块
     uint32_t boot_sector_blks = 1;
     uint32_t super_block_blks = 1;
 
@@ -114,14 +113,13 @@ static void init_superblock_for_raw_partition(superblock *sb, const partition *p
     uint32_t block_bitmap_blks = DIV_ROUND_UP(free_blks, BITS_PER_BLOCK);
     free_blks = free_blks - block_bitmap_blks;
 
-
     /* 超级块初始化 */
     sb->magic = SUPER_BLOCK_MAGIC;
     sb->sec_cnt = part->sector_cnt;
     sb->inode_cnt = MAX_FILES_PER_PART;
     sb->part_lba_base = part->start_lba;
-    // 第 0 块是引导块，第 1 块是超级块
-    sb->block_bitmap_lba = sb->part_lba_base + 2 * SECTORS_PER_BLOCK;
+    // 第 0 扇区是引导扇区，第 1 块是超级块
+    sb->block_bitmap_lba = sb->part_lba_base + 1 + 1 * SECTORS_PER_BLOCK;
     sb->block_bitmap_block_cnt = block_bitmap_blks;
 
     sb->inode_bitmap_lba = sb->block_bitmap_lba + sb->block_bitmap_block_cnt * SECTORS_PER_BLOCK;
