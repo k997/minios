@@ -11,7 +11,7 @@
 
 typedef enum FS_TYPE
 {
-    FS_UNKNOW,
+    FS_UNKNOWN,
     FS_FILE,
     FS_DIRECTORY
 } FS_TYPE;
