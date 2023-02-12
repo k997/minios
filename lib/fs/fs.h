@@ -8,6 +8,7 @@
 #define MAX_FILE_NAME_LEN 16
 #define MAX_FILES_PER_PART 4096
 #define SUPER_BLOCK_MAGIC 0x19590318
+#define MAX_PATH_LEN 512
 
 typedef enum FS_TYPE
 {
@@ -82,6 +83,14 @@ typedef struct inode
     struct list_elem inode_tag;
 } inode;
 
+// 记录查找过程中的路径
+typedef struct path_search_record
+{
+    char searched_path[MAX_PATH_LEN];
+    dir *parent_dir;
+    FS_TYPE f_type;
+} path_search_record;
+
 typedef enum bitmap_type
 {
     INODE_BITMAP, // inode 位图
@@ -114,5 +123,8 @@ void create_dir_entry(char *filename, uint32_t inode_nr, FS_TYPE f_type, dir_ent
 bool search_dir_entry(partition *part, dir *pdir, const char *name, dir_entry *dir_e);
 bool sync_dir_entry(dir *parent_dir, dir_entry *d_e, void *buf);
 bool delete_dir_entry(partition *part, dir *pdir, uint32_t inode_nr, void *buf);
+
+uint32_t path_depth(char *path);
+int search_file(const char *path, path_search_record *record);
 
 #endif
