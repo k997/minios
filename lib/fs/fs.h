@@ -89,15 +89,30 @@ typedef enum bitmap_type
 } bitmap_type;
 
 extern partition *cur_part;
+extern dir root_dir;
 
 void fs_init();
+
 void format_partition(partition *part);
 void format_all_partition();
 void mount_partition(char *partname);
-void bitmap_sync(partition *part, uint32_t idx, bitmap_type btmp_type);
+
 void inode_sync(partition *part, inode *node, void *io_buf);
 inode *inode_open(partition *part, uint32_t inode_nr);
 void inode_close(inode *_inode);
 void inode_init(uint32_t inode_nr, struct inode *new_inode);
+
+uint32_t data_block_lba(partition *part, uint32_t block_bitmap_idx);
+uint32_t data_block_bitmap_idx(partition *part, uint32_t lba);
+void bitmap_sync(partition *part, uint32_t idx, bitmap_type btmp_type);
+
+void open_root_dir(partition *part);
+dir *dir_open(partition *part, uint32_t inode_nr);
+void dir_close(dir *dir);
+
+void create_dir_entry(char *filename, uint32_t inode_nr, FS_TYPE f_type, dir_entry *pde);
+bool search_dir_entry(partition *part, dir *pdir, const char *name, dir_entry *dir_e);
+bool sync_dir_entry(dir *parent_dir, dir_entry *d_e, void *buf);
+bool delete_dir_entry(partition *part, dir *pdir, uint32_t inode_nr, void *buf);
 
 #endif
