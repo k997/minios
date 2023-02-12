@@ -74,7 +74,9 @@ typedef struct inode
     bool write_deny;      // 写文件不能并行，进程写文件前检查此标识
 
     /* i_sectors[0-11]是直接块， i_sectors[12]用来存储一级间接块指针
-    数组中存放的是 block 的编号
+    文件最大容量是 (直接块数量 + 块大小 / block编号空间大小) * 块尺寸
+    (12 + BLOCK_SIZE /sizeof(uint32_t)) * BLOCK_SIZE
+    数组中存放的是 block 的 lba
      */
     uint32_t i_blocks[13];
     struct list_elem inode_tag;
@@ -86,9 +88,16 @@ typedef enum bitmap_type
     BLOCK_BITMAP  // 块位图
 } bitmap_type;
 
+extern partition *cur_part;
+
 void fs_init();
 void format_partition(partition *part);
 void format_all_partition();
 void mount_partition(char *partname);
 void bitmap_sync(partition *part, uint32_t idx, bitmap_type btmp_type);
+void inode_sync(partition *part, inode *node, void *io_buf);
+inode *inode_open(partition *part, uint32_t inode_nr);
+void inode_close(inode *_inode);
+void inode_init(uint32_t inode_nr, struct inode *new_inode);
+
 #endif
