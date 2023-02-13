@@ -5,7 +5,6 @@
 
 #define MAX_FILE_OPEN 32
 
-
 typedef struct file
 {
     uint32_t fd_pos;        // 当前文件操作的偏移地址
@@ -19,5 +18,14 @@ typedef enum std_fd
     STD_ERR
 } std_fd;
 
+
+/* 打开文件的选项 */
+typedef enum oflags
+{
+    O_R_ONLY,   // 只读
+    O_W_ONLY,   // 只写
+    O_RW,     // 读写
+    O_CREAT = 4 // 创建
+} oflags;
 
 #endif
