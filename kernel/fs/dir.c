@@ -105,7 +105,6 @@ bool search_dir_entry(partition *part, dir *pdir, const char *name, dir_entry *d
     return false;
 }
 
-
 /*
 同步 dir entry 到硬盘
 同步父目录 inode 时 inode 可能跨两个 block，buf 至少要两倍 block_size 大小
@@ -202,7 +201,7 @@ bool sync_dir_entry(dir *parent_dir, dir_entry *d_e, void *buf)
             else
             {
                 // 父目录的 inode 与间接块无关，直接同步间接块分配情况到磁盘
-                disk_write(cur_part->belong_to_disk, all_data_blocks + 12, all_data_blocks[12], 1);
+                disk_write(cur_part->belong_to_disk, all_data_blocks + 12, parent_dir_inode->i_blocks[12], 1);
             }
             // 新块数据初始化为 0
             memset(buf, 0, BLOCK_SIZE);
