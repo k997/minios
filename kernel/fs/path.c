@@ -5,7 +5,7 @@
 static char *path_parse(char *path, char *name_buf)
 {
 
-    if (path[0] != '/')
+    if (path[0] == '/')
     {
         // 连续多个 '/'
         while (*(++path) == '/')
@@ -43,7 +43,7 @@ uint32_t path_depth(char *path)
     }
     return depth;
 }
- /* 搜索文件 path，若找到则返回其 inode 号，否则返回-1 */
+/* 搜索文件 path，若找到则返回其 inode 号，否则返回-1 */
 int search_file(const char *path, path_search_record *record)
 {
     // 根目录
@@ -86,7 +86,7 @@ int search_file(const char *path, path_search_record *record)
 
         if (dir_entry_buf.f_type == FS_DIRECTORY)
         {
-            parent_dir_inode_nr = cur_dir->inode->i_nr; // 当前路径下查找 subpath 成功，设置当前路径为父路径
+            parent_dir_inode_nr = cur_dir->inode->i_nr;       // 当前路径下查找 subpath 成功，设置当前路径为父路径
             dir_close(cur_dir);                               // 关闭 dir 防止内存泄漏
             cur_dir = dir_open(cur_part, dir_entry_buf.i_nr); // 当前路径更新为 subdir
             record->parent_dir = cur_dir;
