@@ -57,7 +57,7 @@ typedef void *syscall;
         retval;                                                         \
     })
 
-uint32_t write(char *str);
+uint32_t write(int32_t fd, void *buf, uint32_t nbytes);
 void free(void *ptr);
 void *malloc(uint32_t size);
 void syscall_init();

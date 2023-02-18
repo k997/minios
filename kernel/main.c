@@ -13,26 +13,36 @@
 #include "fs.h"
 #include "file.h"
 
-
 int main(void)
 {
    printk("I am kernel\n");
    init_all();
    interrupt_enable();
-   char filename[] = "/file1/hellow/da/a";
-   char buf[MAX_FILE_NAME_LEN];
-   char *rest = filename;
-   while (rest != NULL)
-   {
-      rest = path_parse(rest, buf);
+   char filename[] = "/file1";
+   char content[] = "hello world";
+   uint32_t len = strlen(content);
+   int32_t fd;
+   // 创建文件
+   fd = sys_open(filename, O_CREAT);
+   printk("create fd %d\n", fd);
+   sys_close(fd);
+   ASSERT(thread_running()->fd_table[fd]==-1);
 
-      if (rest)
-         printk("rest: %s, buf: %s\n", rest, buf);
-      else
-         printk("rest:  , buf: %s\n", buf);
-   }
+   // 读取文件
+   fd = sys_open(filename, O_W_ONLY);
+   int nbytes = sys_write(fd, content, strlen(content));
+   sys_close(fd);
+   ASSERT(thread_running()->fd_table[fd]==-1);
+   printk("write fd: %d, content's len is %d, write %d bytes\n", fd, len, nbytes);
 
 
+   // 读取文件
+   fd = sys_open(filename, O_R_ONLY);
+   char buf[512] = {0};
+   int32_t read_bytes = sys_read(fd, buf, len);
+   printk("read fd %d,read_bytes %d,str: %s\n", fd, read_bytes, buf);
+   sys_close(fd);
+   ASSERT(thread_running()->fd_table[fd] == -1);
    while (1)
       ;
    return 0;

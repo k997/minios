@@ -1,6 +1,7 @@
 #include "string.h"
 #include "stdio.h"
 #include "syscall.h"
+#include "file.h"
 
 /*
     将参数 ap 按照格式 format 输出到字符串 str，
@@ -56,7 +57,7 @@ void printf(const char *format, ...)
     char buf[STDIO_BUF_SIZE] = {0};
     vsprintf(buf, format, args);
     va_end(args);
-    write(buf);
+    write(STD_OUT, buf, strlen(buf));
 }
 uint32_t sprintf(char *buf, const char *format, ...)
 {

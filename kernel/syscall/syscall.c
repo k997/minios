@@ -5,8 +5,8 @@
 #include "string.h"
 #include "idt.h"
 #include "memory.h"
+#include "fs.h"
 
-static uint32_t sys_write(char *str);
 
 extern uint32_t syscall_handler(void);
 syscall syscall_table[SYSCALL_TOTAL_NR];
@@ -31,10 +31,10 @@ void syscall_register(SYSCALL_NR _syscall_nr, syscall _syscall_func)
     syscall_table[_syscall_nr] = _syscall_func;
 }
 
-// write 系统调用封装，等价于 _syscall_1(SYS_WRITE, str)
-uint32_t write(char *str)
+// write 系统调用封装，等价于 _syscall_3(SYS_WRITE, fd, buf, nbytes)
+uint32_t write(int32_t fd, void *buf, uint32_t nbytes)
 {
-    return _syscall_1(SYS_WRITE, str);
+    return _syscall_3(SYS_WRITE, fd, buf, nbytes);
 }
 
 void free(void *ptr)
@@ -44,12 +44,5 @@ void free(void *ptr)
 
 void *malloc(uint32_t size)
 {
-    return (void*)_syscall_1(SYS_MALLOC, size);
-}
-
-// write 系统调用处理函数
-static uint32_t sys_write(char *str)
-{
-    put_str(str);
-    return strlen(str);
+    return (void *)_syscall_1(SYS_MALLOC, size);
 }
