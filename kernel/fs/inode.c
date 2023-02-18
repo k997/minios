@@ -12,7 +12,7 @@ typedef struct inode_position {
 static void inode_locate(partition *part, uint32_t inode_nr, inode_position *inode_p);
 
 static void inode_locate(partition *part, uint32_t inode_nr, inode_position *inode_p) {
-    // inode 数量最多不会超过 MAX_FILES_PER_PART
+    // inode 编号最大不会超过 MAX_FILES_PER_PART
     ASSERT(inode_nr < MAX_FILES_PER_PART);
     // inode 所在的 block
     uint32_t blocks_idx = inode_nr * sizeof(inode) / BLOCK_SIZE;
