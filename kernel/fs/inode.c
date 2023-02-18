@@ -3,7 +3,8 @@
 #include "ide.h"
 #include "string.h"
 
-typedef struct inode_position {
+typedef struct inode_position
+{
     bool cross_block;        // inode 是否跨块
     uint32_t lba;            // inode 所在块号
     uint32_t offset_inblock; // inode 在 block 中偏移
@@ -11,7 +12,8 @@ typedef struct inode_position {
 
 static void inode_locate(partition *part, uint32_t inode_nr, inode_position *inode_p);
 
-static void inode_locate(partition *part, uint32_t inode_nr, inode_position *inode_p) {
+static void inode_locate(partition *part, uint32_t inode_nr, inode_position *inode_p)
+{
     // inode 编号最大不会超过 MAX_FILES_PER_PART
     ASSERT(inode_nr < MAX_FILES_PER_PART);
     // inode 所在的 block
@@ -31,7 +33,8 @@ static void inode_locate(partition *part, uint32_t inode_nr, inode_position *ino
 若到这最后一步（也就是执行到此函数）时才申请内存失败，前面的所有操作都白费了不说，还要回
 滚到之前的旧状态，代价太大，因此 io_buf 必须由主调函数提前申请好
  */
-void inode_sync(partition *part, inode *node, void *io_buf) {
+void inode_sync(partition *part, inode *node, void *io_buf)
+{
     inode_position pos;
     inode_locate(part, node->i_nr, &pos);
     // 去除 inode 中无需同步到磁盘的信息
@@ -48,12 +51,79 @@ void inode_sync(partition *part, inode *node, void *io_buf) {
     disk_write(part->belong_to_disk, io_buf, pos.lba, block_cnt);
 }
 
-inode *inode_open(partition *part, uint32_t inode_nr) {
+// 释放 inode 数据及其本身
+void inode_release(partition *part, uint32_t inode_nr, void *buf)
+{
+    ASSERT(inode_nr < MAX_FILES_PER_PART);
+    // 回收数据块
+    inode *del_inode = inode_open(part, inode_nr);
+    uint32_t max_block_cnt_per_file = 12 + BLOCK_SIZE / sizeof(uint32_t);
+    uint32_t size = sizeof(uint32_t) * max_block_cnt_per_file;
+    uint32_t file_blocks_lba[size];
+    memset(file_blocks_lba, 0, size);
+
+    collect_inode_datablock_lba_table(part,del_inode, file_blocks_lba);
+    int32_t bitmap_idx;
+    if (del_inode->i_blocks[12] != 0)
+    {
+        bitmap_idx = data_block_bitmap_idx(part, del_inode->i_blocks[12]);
+        bitmap_free(&part->block_bitmap, bitmap_idx, 1);
+        bitmap_sync(part, bitmap_idx, BLOCK_BITMAP);
+    }
+    uint32_t blk_idx;
+    for (blk_idx = 0; blk_idx < max_block_cnt_per_file; blk_idx++)
+    {
+        bitmap_idx = data_block_bitmap_idx(part, file_blocks_lba[blk_idx]);
+        bitmap_free(&part->block_bitmap, bitmap_idx, 1);
+        bitmap_sync(part, bitmap_idx, BLOCK_BITMAP);
+    }
+
+    // 回收 inode
+    bitmap_free(&part->inode_bitmap, inode_nr, 1);
+    bitmap_sync(part, bitmap_idx, INODE_BITMAP);
+}
+
+void collect_inode_datablock_lba_table(partition *part, inode *node, uint32_t *block_lba_table)
+{
+    uint32_t blk_idx;
+    for (blk_idx = 0; blk_idx < 12; blk_idx++) // 直接块
+    {
+        block_lba_table[blk_idx] = node->i_blocks[blk_idx];
+    }
+    if (node->i_blocks[12] != 0)
+    {
+        disk_read(part->belong_to_disk, block_lba_table + 12, node->i_blocks[12], 1);
+    }
+}
+
+// 为 inode 分配间接块，分配成功则返回间接块的 lba，失败则返回 -1
+int32_t indirect_block_alloc(partition *part, inode *node, void *io_buf)
+{
+    if (node->i_blocks[12] != 0) // 间接索引表已分配
+        return node->i_blocks[12];
+
+    int32_t block_bitmap_idx = bitmap_alloc(&part->block_bitmap, 1);
+    if (block_bitmap_idx < 0)
+    {
+        printk("alloc block bitmap for indirect_block_alloc failed!\n");
+        return -1;
+    }
+    bitmap_sync(part, block_bitmap_idx, BLOCK_BITMAP); // 每分配一个块就同步一次 block_bitmap
+    node->i_blocks[12] = data_block_lba(part, block_bitmap_idx);
+    memset(io_buf, 0, BLOCK_SIZE);
+    disk_write(part->belong_to_disk, io_buf, node->i_blocks[12], 1);
+    return node->i_blocks[12];
+}
+
+inode *inode_open(partition *part, uint32_t inode_nr)
+{
     list_elem *elem;
     inode *inode_found;
-    for (elem = part->open_inodes.head.next; elem != &part->open_inodes.tail; elem = elem->next) {
+    for (elem = part->open_inodes.head.next; elem != &part->open_inodes.tail; elem = elem->next)
+    {
         inode_found = container_of(inode, inode_tag, elem);
-        if (inode_found->i_nr == inode_nr) {
+        if (inode_found->i_nr == inode_nr)
+        {
             inode_found->i_open_cnts++;
             return inode_found;
         }
@@ -84,7 +154,8 @@ inode *inode_open(partition *part, uint32_t inode_nr) {
     return inode_found;
 }
 
-void inode_close(inode *_inode) {
+void inode_close(inode *_inode)
+{
     if (--_inode->i_open_cnts == 0)
         list_remove(&_inode->inode_tag);
     // 从内核空间释放 inode
@@ -96,13 +167,15 @@ void inode_close(inode *_inode) {
 }
 
 // inode 编号及待初始化的 inode 指针
-void inode_init(uint32_t inode_nr, struct inode *new_inode) {
+void inode_init(uint32_t inode_nr, struct inode *new_inode)
+{
     new_inode->i_nr = inode_nr;
     new_inode->i_size = 0;
     new_inode->i_open_cnts = 0;
     new_inode->write_deny = false;
     uint8_t idx;
-    for (idx = 0; idx < 13; idx++) {
+    for (idx = 0; idx < 13; idx++)
+    {
         /* i_blocks[12]为一级间接块地址 */
         new_inode->i_blocks[idx] = 0;
     }

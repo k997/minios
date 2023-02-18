@@ -110,6 +110,10 @@ void inode_sync(partition *part, inode *node, void *io_buf);
 inode *inode_open(partition *part, uint32_t inode_nr);
 void inode_close(inode *_inode);
 void inode_init(uint32_t inode_nr, struct inode *new_inode);
+void inode_release(partition *part, uint32_t inode_nr, void *buf);
+void collect_inode_datablock_lba_table(partition *part, inode *node, uint32_t *block_lba_table);
+int32_t indirect_block_alloc(partition *part, inode *node, void *io_buf);
+
 
 uint32_t data_block_lba(partition *part, uint32_t block_bitmap_idx);
 uint32_t data_block_bitmap_idx(partition *part, uint32_t lba);
