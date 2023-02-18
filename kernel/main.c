@@ -10,15 +10,27 @@
 #include "kstdio.h"
 #include "syscall.h"
 #include "ide.h"
+#include "fs.h"
+#include "file.h"
 
-void k_thread_a(void *);
-void k_thread_b(void *);
-void k_thread_test_large(void *arg);
+
 int main(void)
 {
    printk("I am kernel\n");
    init_all();
    interrupt_enable();
+   char filename[] = "/file1/hellow/da/a";
+   char buf[MAX_FILE_NAME_LEN];
+   char *rest = filename;
+   while (rest != NULL)
+   {
+      rest = path_parse(rest, buf);
+
+      if (rest)
+         printk("rest: %s, buf: %s\n", rest, buf);
+      else
+         printk("rest:  , buf: %s\n", buf);
+   }
 
 
    while (1)

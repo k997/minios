@@ -16,6 +16,7 @@ static char *path_parse(char *path, char *name_buf)
     {
         *name_buf++ = *path++;
     }
+    *name_buf='\0';
     // path 全部解析完成
     if (path[0] == 0)
     {
@@ -64,6 +65,10 @@ int search_file(const char *path, path_search_record *record)
     dir_entry dir_entry_buf;
     dir *cur_dir = &root_dir;         // 从根目录开始查找
     uint32_t parent_dir_inode_nr = 0; // 从根目录 inode_nr
+    
+    record->f_type = FS_UNKNOWN;
+    record->parent_dir = cur_dir; 
+    
     char *subpath = path_parse((char *)path, name_buf);
 
     while (name_buf[0])
