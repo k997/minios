@@ -28,6 +28,7 @@ typedef enum oflags
 } oflags;
 
 
+extern file global_open_file_table[MAX_FILE_OPEN];
 
 void global_open_file_table_init();
 file* fd_to_file(uint32_t fd);

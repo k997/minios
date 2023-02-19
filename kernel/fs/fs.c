@@ -67,10 +67,6 @@ int32_t sys_open(const char *path, uint8_t flag)
 
         if (is_create)
         {
-            printk("%x\n", &root_dir);
-
-            printk("parent %d,file %s flag: %d\n", record.parent_dir->inode, _filename, flag);
-
             fd = file_create(record.parent_dir, _filename, flag);
             dir_close(record.parent_dir);
             return fd;
@@ -91,7 +87,6 @@ int32_t sys_close(int32_t fd)
         file *f = fd_to_file(fd);
         ret = file_close(f);
         thread_running()->fd_table[fd] = -1;
-
     }
     return ret;
 }
@@ -136,4 +131,52 @@ int32_t sys_read(int32_t fd, void *buf, uint32_t nbytes)
     ASSERT(buf != NULL);
     file *f = fd_to_file(fd);
     return file_read(f, buf, nbytes);
+}
+
+/* 删除文件（非目录），成功返回 0，失败返回-1 */
+int32_t sys_unlink(const char *pathname)
+{
+    ASSERT(strlen(pathname) < MAX_PATH_LEN);
+    path_search_record record;
+    memset(&record, 0, sizeof(record));
+    int32_t inode_nr = search_file(pathname, &record);
+    if (inode_nr == -1)
+    {
+        printk("file %s not found!\n", pathname);
+        dir_close(record.parent_dir);
+        return -1;
+    }
+    if (record.f_type == FS_DIRECTORY)
+    {
+        printk("can`t delete a direcotry with unlink(),use rmdir() to instead\n");
+        dir_close(record.parent_dir);
+        return -1;
+    }
+
+    //  文件在使用则禁止删除
+    uint32_t file_idx;
+    for (file_idx = 0; file_idx < MAX_FILE_OPEN; file_idx++)
+    {
+        if (global_open_file_table[file_idx].fd_inode != NULL &&
+            (uint32_t)inode_nr == global_open_file_table[file_idx].fd_inode->i_nr)
+        {
+            printk("file %s is in use, not allow to delete!\n", pathname);
+            dir_close(record.parent_dir);
+            return -1;
+        }
+    }
+
+    void *buf = sys_malloc(2 * BLOCK_SIZE);
+    if (buf == NULL)
+    {
+        printk("sys_unlink: malloc for buf failed\n");
+        dir_close(record.parent_dir);
+        return -1;
+    }
+
+    delete_dir_entry(cur_part, record.parent_dir, inode_nr, buf);
+    inode_release(cur_part, inode_nr, buf);
+    dir_close(record.parent_dir);
+    sys_free(buf);
+    return 0;
 }
