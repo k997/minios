@@ -33,5 +33,5 @@ uint32_t data_block_lba(partition *part, uint32_t block_bitmap_idx)
 // 根据 lba 返回 block bitmap idx
 uint32_t data_block_bitmap_idx(partition *part, uint32_t lba)
 {
-    return lba - part->sb->data_start_lba;
+    return (lba - part->sb->data_start_lba) / SECTORS_PER_BLOCK;
 }
