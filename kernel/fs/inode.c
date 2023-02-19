@@ -62,7 +62,8 @@ void inode_release(partition *part, uint32_t inode_nr, void *buf)
     uint32_t file_blocks_lba[size];
     memset(file_blocks_lba, 0, size);
 
-    collect_inode_datablock_lba_table(part,del_inode, file_blocks_lba);
+    collect_inode_datablock_lba_table(part, del_inode, file_blocks_lba);
+
     int32_t bitmap_idx;
     if (del_inode->i_blocks[12] != 0)
     {
@@ -73,14 +74,16 @@ void inode_release(partition *part, uint32_t inode_nr, void *buf)
     uint32_t blk_idx;
     for (blk_idx = 0; blk_idx < max_block_cnt_per_file; blk_idx++)
     {
+        if (file_blocks_lba[blk_idx] == 0)
+            continue;
         bitmap_idx = data_block_bitmap_idx(part, file_blocks_lba[blk_idx]);
         bitmap_free(&part->block_bitmap, bitmap_idx, 1);
         bitmap_sync(part, bitmap_idx, BLOCK_BITMAP);
     }
-
     // 回收 inode
     bitmap_free(&part->inode_bitmap, inode_nr, 1);
     bitmap_sync(part, bitmap_idx, INODE_BITMAP);
+    inode_close(del_inode);
 }
 
 void collect_inode_datablock_lba_table(partition *part, inode *node, uint32_t *block_lba_table)
