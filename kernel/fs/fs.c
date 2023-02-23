@@ -180,3 +180,112 @@ int32_t sys_unlink(const char *pathname)
     sys_free(buf);
     return 0;
 }
+
+int32_t sys_mkdir(const char *pathname)
+{
+    uint8_t rollback_step = 0;
+    void *io_buf = sys_malloc(BLOCK_SIZE * 2);
+    if (io_buf == NULL)
+    {
+        printk("sys_mkdir: sys_malloc for io_buf failed\n");
+        return -1;
+    }
+    path_search_record record;
+    memset(&record, 0, sizeof(record));
+    int32_t inode_nr = -1;
+    inode_nr = search_file(pathname, &record);
+    // 文件已存在
+    if (inode_nr != -1)
+    {
+        printk("sys_mkdir: file or directory %s exist!\n", pathname);
+        rollback_step = 1;
+        goto rollback;
+    }
+    else
+    {
+        uint32_t pathname_depth = path_depth((char *)pathname);
+        uint32_t record_path = path_depth(record.searched_path);
+        // 中间目录不存在
+        if (pathname_depth != record_path)
+        {
+            printk("sys_mkdir: create %s fail, can not access subpath %s\n",
+                   pathname, record.searched_path);
+
+            rollback_step = 1;
+            goto rollback;
+        }
+    }
+    // 文件夹不存在且父目录存在
+    // 初始化目录 inode
+    inode_nr = bitmap_alloc(&cur_part->inode_bitmap, 1);
+    if (inode_nr == -1)
+    {
+        printk("sys_mkdir: allocate inode failed\n");
+        rollback_step = 1;
+        goto rollback;
+    }
+    inode new_inode;
+    inode_init(inode_nr, &new_inode);
+    // 为目录申请块
+    int32_t block_bitmap_idx;
+    block_bitmap_idx = bitmap_alloc(&cur_part->block_bitmap, 1);
+    if (block_bitmap_idx == -1)
+    {
+        printk("sys_mkdir: block_bitmap_alloc for create directory failed\n");
+        rollback_step = 2;
+    }
+    bitmap_sync(cur_part, block_bitmap_idx, BLOCK_BITMAP); // 每分配一个块就同步一次 block_bitmap
+
+    new_inode.i_blocks[0] = data_block_lba(cur_part, block_bitmap_idx);
+
+    memset(io_buf, 0, BLOCK_SIZE * 2);
+    dir_entry *dentry = (dir_entry *)io_buf;
+    memcpy(dentry->filename, ".", 1);
+    dentry->f_type = FS_DIRECTORY;
+    dentry->i_nr = inode_nr;
+
+    dentry++;
+    memcpy(dentry->filename, "..", 2);
+    dentry->f_type = FS_DIRECTORY;
+    dentry->i_nr = inode_nr;
+
+    disk_write(cur_part->belong_to_disk, io_buf, new_inode.i_blocks[0], 1);
+    // 在父目录中添加目录象
+    dir_entry new_dir_entry;
+    memset(&new_dir_entry, 0, sizeof(dir_entry));
+    char *dirname = strchr(record.searched_path, '/') + 1; // 目录名称后可能会有字符'/',record.searched_path，无'/'
+    dir *parent_dir = record.parent_dir;
+    create_dir_entry(dirname, inode_nr, FS_DIRECTORY, &new_dir_entry);
+
+    memset(io_buf, 0, BLOCK_SIZE * 2);
+    if (!sync_dir_entry(parent_dir, &new_dir_entry, io_buf))
+    {
+        printk("sys_mkdir: sync_dir_entry to disk failed!\n");
+        rollback_step = 2;
+        goto rollback;
+    }
+
+    // 同步父目录 inode
+    memset(io_buf, 0, BLOCK_SIZE * 2);
+    inode_sync(cur_part, parent_dir->inode, io_buf);
+
+    // 同步新目录 inode
+    memset(io_buf, 0, BLOCK_SIZE * 2);
+    inode_sync(cur_part, &new_inode, io_buf);
+
+    // 同步 inode 位图
+    bitmap_sync(cur_part, inode_nr, INODE_BITMAP);
+    sys_free(io_buf);
+    dir_close(record.parent_dir);
+    return 0;
+rollback:
+    switch (rollback_step)
+    {
+    case 2:
+        bitmap_free(&cur_part->inode_bitmap, inode_nr, 1);
+    case 1:
+        dir_close(record.parent_dir);
+        sys_free(io_buf);
+    }
+    return -1;
+}

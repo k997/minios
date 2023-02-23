@@ -2,6 +2,7 @@
 #include "debug.h"
 #include "ide.h"
 #include "string.h"
+#include "kstdio.h"
 
 typedef struct inode_position
 {
