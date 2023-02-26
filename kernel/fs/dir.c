@@ -30,9 +30,6 @@ void dir_close(dir *dir)
 
     if (dir->inode->i_nr == 0)
         return;
-
-    printk("close %d\n",dir->inode->i_nr);
-
     inode_close(dir->inode);
     sys_free(dir);
 }
