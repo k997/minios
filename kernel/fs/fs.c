@@ -287,3 +287,40 @@ rollback:
     }
     return -1;
 }
+
+
+// 打开 dir ，成功返回 dir* ，失败返回 NULL
+dir *sys_opendir(const char *name)
+{
+    ASSERT(strlen(name) < MAX_FILE_NAME_LEN);
+    path_search_record record;
+    memset(&record, 0, sizeof(path_search_record));
+    int32_t inode_nr = search_file(name, &record);
+    dir *ret = NULL;
+    if (inode_nr == -1)
+    {
+        printk("In %s, sub path %s not exist\n", name, record.searched_path);
+    }
+    else if (record.f_type != FS_DIRECTORY)
+    {
+        printk("%s is not directory!\n", name);
+    }
+    else
+    {
+        ret = dir_open(cur_part, inode_nr);
+    }
+    dir_close(record.parent_dir);
+    return ret;
+}
+
+// 关闭 dir ，成功返回 0 ，失败返回 -1
+int32_t sys_closedir(dir *d)
+{
+    int32_t ret = -1;
+    if (d)
+    {
+        dir_close(d);
+        ret = 0;
+    }
+    return ret;
+}
