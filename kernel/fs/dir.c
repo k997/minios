@@ -27,8 +27,12 @@ void dir_close(dir *dir)
     /************* 根目录不能关闭 ***************
 1 根目录自打开后就不应该关闭，否则还需要再次 open_root_dir();
 2 root_dir 所在的内存是低端 1MB 之内，并非在堆中， free 会出问题 */
-    if (dir == &root_dir)
+
+    if (dir->inode->i_nr == 0)
         return;
+
+    printk("close %d\n",dir->inode->i_nr);
+
     inode_close(dir->inode);
     sys_free(dir);
 }
@@ -59,32 +63,31 @@ bool search_dir_entry(partition *part, dir *pdir, const char *name, dir_entry *d
         printk("search_dir_entry: sys_malloc for all_blocks failed");
         return false;
     }
-    memset(all_data_blocks, 0, 48 + BLOCK_SIZE);
 
-    uint32_t block_idx;
-    // 读取直接块
-    for (block_idx = 0; block_idx < 12; block_idx++)
-    {
-        all_data_blocks[block_idx] = pdir->inode->i_blocks[block_idx];
-    }
-
-    // 读取间接块
-    if (pdir->inode->i_blocks[12] != 0)
-    {
-        disk_read(part->belong_to_disk, all_data_blocks + 12, pdir->inode->i_blocks[12], 1);
-    }
     // 已获取 dir 的 inode 中记录的所有扇区编号，开始逐扇区查找 dir_entry
     uint8_t *buf = (uint8_t *)sys_malloc(BLOCK_SIZE);
+    if (buf == NULL)
+    {
+        printk("search_dir_entry: sys_malloc for io buf failed");
+        sys_free(all_data_blocks);
+        return false;
+    }
+
+    memset(all_data_blocks, 0, 48 + BLOCK_SIZE);
+    collect_inode_datablock_lba_table(part, pdir->inode, all_data_blocks);
+
     dir_entry *p_de;
     uint32_t dir_entry_size = part->sb->dir_entry_size;
     uint32_t dir_entry_cnt = BLOCK_SIZE / dir_entry_size;
     uint32_t dir_entry_idx;
+    uint32_t block_idx;
 
     for (block_idx = 0; block_idx < max_block_cnt; block_idx++)
     {
         // 为空则跳过
         if (all_data_blocks[block_idx] == 0)
             continue;
+        memset(buf, 0, BLOCK_SIZE);
         // 读取 all_blocks[block_idx] 指向的 block
         disk_read(part->belong_to_disk, buf, all_data_blocks[block_idx], 1);
         // block 内查找 dir entry
@@ -98,7 +101,6 @@ bool search_dir_entry(partition *part, dir *pdir, const char *name, dir_entry *d
                 return true;
             }
         }
-        memset(buf, 0, BLOCK_SIZE);
     }
     sys_free(buf);
     sys_free(all_data_blocks);
@@ -127,17 +129,24 @@ bool sync_dir_entry(dir *parent_dir, dir_entry *d_e, void *buf)
         return false;
     }
     memset(all_data_blocks, 0, 4 * block_cnt);
-    // 初始化 all block 的直接块部分
+    // 初始化 all block
+    collect_inode_datablock_lba_table(cur_part, parent_dir_inode, all_data_blocks);
     uint32_t block_idx;
-    for (block_idx = 0; block_idx < 12; block_idx++)
-    {
-        all_data_blocks[block_idx] = parent_dir_inode->i_blocks[block_idx];
-    }
-
     for (block_idx = 0; block_idx < block_cnt; block_idx++)
     {
+        // 间接块未分配则分配间接块
+        if (block_idx == 12 && parent_dir_inode->i_blocks[12] == 0)
+        {
+            int32_t indirect_block_lba = indirect_block_alloc(cur_part, parent_dir_inode, buf);
+            if (indirect_block_lba == -1)
+            {
+                printk("sync_dir_entry: indirect_block_alloc failed");
+                sys_free(all_data_blocks);
+                return false;
+            }
+        }
         // 若第block_idx块已存在且是有效的数据块，将其读进内存,然后在该块中查找空目录项
-        if (all_data_blocks[block_idx] != 0 && block_idx != 12)
+        if (all_data_blocks[block_idx] != 0)
         {
             disk_read(cur_part->belong_to_disk, buf, all_data_blocks[block_idx], 1);
             uint32_t dir_entry_idx;
@@ -162,24 +171,6 @@ bool sync_dir_entry(dir *parent_dir, dir_entry *d_e, void *buf)
         // block 未分配
         else
         {
-            // 间接索引表未分配
-            if (block_idx == 12)
-            {
-                int32_t block_bitmap_idx = bitmap_alloc(&cur_part->block_bitmap, 1);
-                if (block_bitmap_idx < 0)
-                {
-                    printk("alloc block bitmap for sync_dir_entry failed!\n");
-                    sys_free(all_data_blocks);
-                    return false;
-                }
-                bitmap_sync(cur_part, block_bitmap_idx, BLOCK_BITMAP); // 每分配一个块就同步一次 block_bitmap
-                // parent_dir_inode->i_blocks 本身修改未写入硬盘
-                parent_dir_inode->i_blocks[12] = data_block_lba(cur_part, block_bitmap_idx);
-                // 同步父目录 inode
-                memset(buf, 0, BLOCK_SIZE * 2);
-                inode_sync(cur_part, parent_dir_inode, buf);
-            }
-
             // 若第block_idx块不存在，则先分配 block ，然后从新 block 中为其分配 dir_entry
             int32_t block_bitmap_idx = bitmap_alloc(&cur_part->block_bitmap, 1);
             if (block_bitmap_idx < 0)
@@ -210,7 +201,6 @@ bool sync_dir_entry(dir *parent_dir, dir_entry *d_e, void *buf)
             disk_write(cur_part->belong_to_disk, buf, all_data_blocks[block_idx], 1);
             parent_dir_inode->i_size += dir_entry_size;
             // 同步父目录 inode
-            memset(buf, 0, BLOCK_SIZE * 2);
             inode_sync(cur_part, parent_dir_inode, buf);
             sys_free(all_data_blocks);
             return true;
