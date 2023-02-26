@@ -114,8 +114,7 @@ int32_t indirect_block_alloc(partition *part, inode *node, void *io_buf)
     }
     bitmap_sync(part, block_bitmap_idx, BLOCK_BITMAP); // 每分配一个块就同步一次 block_bitmap
     node->i_blocks[12] = data_block_lba(part, block_bitmap_idx);
-    memset(io_buf, 0, BLOCK_SIZE);
-    disk_write(part->belong_to_disk, io_buf, node->i_blocks[12], 1);
+    inode_sync(part,node,io_buf);
     return node->i_blocks[12];
 }
 
