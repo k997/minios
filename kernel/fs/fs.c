@@ -238,20 +238,24 @@ int32_t sys_mkdir(const char *pathname)
     inode_init(inode_nr, &new_inode);
     new_inode.i_blocks[0] = data_block_lba(cur_part, block_bitmap_idx);
 
-    memset(io_buf, 0, BLOCK_SIZE * 2);
+    uint32_t dir_entry_size = cur_part->sb->dir_entry_size;
     dir_entry *dentry = (dir_entry *)io_buf;
+
+    memset(io_buf, 0, BLOCK_SIZE * 2);
     memcpy(dentry->filename, ".", 1);
     dentry->f_type = FS_DIRECTORY;
     dentry->i_nr = inode_nr;
+    new_inode.i_size += dir_entry_size;
 
     dir *parent_dir = record.parent_dir;
     dentry++;
     memcpy(dentry->filename, "..", 2);
     dentry->f_type = FS_DIRECTORY;
     dentry->i_nr = parent_dir->inode->i_nr;
+    new_inode.i_size += dir_entry_size;
 
     disk_write(cur_part->belong_to_disk, io_buf, new_inode.i_blocks[0], 1);
-    // 在父目录中添加目录象
+    // 在父目录中添加目录项
     dir_entry new_dir_entry;
     memset(&new_dir_entry, 0, sizeof(dir_entry));
     char *dirname = strrchr(record.searched_path, '/') + 1; // 目录名称后可能会有字符'/',record.searched_path，无'/'
