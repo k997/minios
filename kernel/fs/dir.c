@@ -28,7 +28,7 @@ void dir_close(dir *dir)
 1 根目录自打开后就不应该关闭，否则还需要再次 open_root_dir();
 2 root_dir 所在的内存是低端 1MB 之内，并非在堆中， free 会出问题 */
 
-    if (dir->inode->i_nr == 0)
+    if (dir->inode->i_nr == root_dir.inode->i_nr)
         return;
     inode_close(dir->inode);
     sys_free(dir);
