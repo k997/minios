@@ -53,7 +53,7 @@ void inode_sync(partition *part, inode *node, void *io_buf)
 }
 
 // 释放 inode 数据及其本身
-void inode_release(partition *part, uint32_t inode_nr, void *buf)
+void inode_release(partition *part, uint32_t inode_nr)
 {
     ASSERT(inode_nr < MAX_FILES_PER_PART);
     // 回收数据块

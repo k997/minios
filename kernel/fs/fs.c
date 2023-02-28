@@ -175,7 +175,7 @@ int32_t sys_unlink(const char *pathname)
     }
 
     delete_dir_entry(cur_part, record.parent_dir, inode_nr, buf);
-    inode_release(cur_part, inode_nr, buf);
+    inode_release(cur_part, inode_nr);
     dir_close(record.parent_dir);
     sys_free(buf);
     return 0;
