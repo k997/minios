@@ -328,3 +328,10 @@ int32_t sys_closedir(dir *d)
     }
     return ret;
 }
+
+// 根据 dir_pos 读取一个 dir_entry, 成功返回  dir_entry*，失败返回 NULL
+dir_entry *sys_readdir(dir *dir)
+{
+    ASSERT(dir != NULL);
+    return dir_read(dir);
+}

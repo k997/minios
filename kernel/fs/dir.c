@@ -34,6 +34,49 @@ void dir_close(dir *dir)
     sys_free(dir);
 }
 
+// 根据 dir_pos 读取一个 dir_entry, 成功返回  dir_entry*，失败返回 NULL
+dir_entry *dir_read(dir *dir)
+{
+    // 收集 dir 所有 inode lba
+    inode *dir_inode = dir->inode;
+    uint32_t max_block_cnt = 12 + BLOCK_SIZE / sizeof(uint32_t);
+    uint32_t data_blocks_lba_table[max_block_cnt];
+    memset(data_blocks_lba_table, 0, max_block_cnt * sizeof(uint32_t));
+    collect_inode_datablock_lba_table(cur_part, dir_inode, data_blocks_lba_table);
+    // 开始查找 dir entry
+    uint32_t block_idx, dir_entry_idx;
+    uint32_t dir_entry_size = cur_part->sb->dir_entry_size;
+    uint32_t dir_entrys_per_block = BLOCK_SIZE / dir_entry_size;
+    uint32_t cur_dir_entry_pos = 0;
+    dir_entry *cur_dir_e;
+
+    for (block_idx = 0; dir->dir_pos < dir_inode->i_size; block_idx++)
+    {
+        // block 无效则跳过
+        if (data_blocks_lba_table[block_idx] == 0)
+            continue;
+        memset(dir->dir_buf, 0, BLOCK_SIZE);
+        disk_read(cur_part->belong_to_disk, dir->dir_buf, data_blocks_lba_table[block_idx], 1);
+
+        for (dir_entry_idx = 0; dir_entry_idx < dir_entrys_per_block; dir_entry_idx++)
+        {
+            cur_dir_e = (dir_entry *)dir->dir_buf + dir_entry_idx;
+            if (cur_dir_e->f_type != FS_UNKNOWN)
+            {
+                // dir 中 dir entry 不是连续排列，可能有间隔，所有必须逐个比较
+                if (cur_dir_entry_pos < dir->dir_pos)
+                {
+                    cur_dir_entry_pos += dir_entry_size;
+                    continue;
+                }
+                ASSERT(cur_dir_entry_pos == dir->dir_pos);
+                dir->dir_pos += dir_entry_size;
+                return cur_dir_e;
+            }
+        }
+    }
+    return NULL;
+}
 void create_dir_entry(char *filename, uint32_t inode_nr, FS_TYPE f_type, dir_entry *pde)
 {
     ASSERT(strlen(filename) <= MAX_FILE_NAME_LEN);
@@ -132,7 +175,7 @@ bool sync_dir_entry(dir *parent_dir, dir_entry *d_e, void *buf)
     for (block_idx = 0; block_idx < block_cnt; block_idx++)
     {
         // 间接块未分配则分配间接块
-        if (block_idx == 12 && parent_dir_inode->i_blocks[12] == 0)
+        if (block_idx >= 12 && parent_dir_inode->i_blocks[12] == 0)
         {
             int32_t indirect_block_lba = indirect_block_alloc(cur_part, parent_dir_inode, buf);
             if (indirect_block_lba == -1)

@@ -122,6 +122,7 @@ void bitmap_sync(partition *part, uint32_t idx, bitmap_type btmp_type);
 void open_root_dir(partition *part);
 dir *dir_open(partition *part, uint32_t inode_nr);
 void dir_close(dir *dir);
+dir_entry *dir_read(dir *dir);
 
 void create_dir_entry(char *filename, uint32_t inode_nr, FS_TYPE f_type, dir_entry *pde);
 bool search_dir_entry(partition *part, dir *pdir, const char *name, dir_entry *dir_e);
@@ -139,6 +140,7 @@ int32_t sys_unlink(const char *pathname);
 int32_t sys_mkdir(const char *pathname);
 dir *sys_opendir(const char *name);
 int32_t sys_closedir(dir *d);
+dir_entry *sys_readdir(dir *dir);
 
 
 #endif
