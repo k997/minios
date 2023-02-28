@@ -335,3 +335,9 @@ dir_entry *sys_readdir(dir *dir)
     ASSERT(dir != NULL);
     return dir_read(dir);
 }
+
+/* 把目录 dir 的指针 dir_pos 置 0 */
+void sys_rewinddir(dir *dir)
+{
+    dir->dir_pos = 0;
+}

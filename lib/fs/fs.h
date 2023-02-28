@@ -141,6 +141,6 @@ int32_t sys_mkdir(const char *pathname);
 dir *sys_opendir(const char *name);
 int32_t sys_closedir(dir *d);
 dir_entry *sys_readdir(dir *dir);
-
+void sys_rewinddir(dir *dir);
 
 #endif
