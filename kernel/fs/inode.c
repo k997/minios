@@ -114,7 +114,7 @@ int32_t indirect_block_alloc(partition *part, inode *node, void *io_buf)
     }
     bitmap_sync(part, block_bitmap_idx, BLOCK_BITMAP); // 每分配一个块就同步一次 block_bitmap
     node->i_blocks[12] = data_block_lba(part, block_bitmap_idx);
-    inode_sync(part,node,io_buf);
+    inode_sync(part, node, io_buf);
     return node->i_blocks[12];
 }
 
@@ -159,14 +159,17 @@ inode *inode_open(partition *part, uint32_t inode_nr)
 
 void inode_close(inode *_inode)
 {
-    if (--_inode->i_open_cnts == 0)
+    _inode->i_open_cnts--;
+    if (_inode->i_open_cnts == 0)
+    {
         list_remove(&_inode->inode_tag);
-    // 从内核空间释放 inode
-    task_struct *current_task = thread_running();
-    uint32_t *pg_dir_backup = current_task->pgdir;
-    current_task->pgdir = NULL;
-    sys_free(_inode);
-    current_task->pgdir = pg_dir_backup;
+        // 从内核空间释放 inode
+        task_struct *current_task = thread_running();
+        uint32_t *pg_dir_backup = current_task->pgdir;
+        current_task->pgdir = NULL;
+        sys_free(_inode);
+        current_task->pgdir = pg_dir_backup;
+    }
 }
 
 // inode 编号及待初始化的 inode 指针

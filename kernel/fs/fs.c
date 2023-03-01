@@ -369,12 +369,7 @@ int32_t sys_rmdir(const char *pathname)
                     printk("dir %s is not empty, it is not allowed to delete a nonempty directory!\n", pathname);
             }
 
-            /* 书中此处用 dir_close, 但 dir_remove() 中用到了 inode_release(),
-            inode_release() 中使用了 inode_open()和 inode_close()，
-            其中 inode_open() 及 pdir 可能指向内存中同一个 inode(整个扇区全局打开的 inode) ， 
-            inode_release() 中调用 inode_close()可能提前将 pdir 的 inode 释放掉*/
-            // dir_close(pdir);
-            sys_free(pdir);
+            dir_close(pdir);
 
         }
     }
