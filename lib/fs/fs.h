@@ -123,6 +123,9 @@ void open_root_dir(partition *part);
 dir *dir_open(partition *part, uint32_t inode_nr);
 void dir_close(dir *dir);
 dir_entry *dir_read(dir *dir);
+int32_t dir_remove(dir* parent_dir,dir* child_dir);
+bool dir_is_empty(dir *pdir);
+
 
 void create_dir_entry(char *filename, uint32_t inode_nr, FS_TYPE f_type, dir_entry *pde);
 bool search_dir_entry(partition *part, dir *pdir, const char *name, dir_entry *dir_e);
@@ -142,5 +145,6 @@ dir *sys_opendir(const char *name);
 int32_t sys_closedir(dir *d);
 dir_entry *sys_readdir(dir *dir);
 void sys_rewinddir(dir *dir);
+int32_t sys_rmdir(const char *pathname);
 
 #endif

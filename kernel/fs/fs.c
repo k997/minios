@@ -341,3 +341,45 @@ void sys_rewinddir(dir *dir)
 {
     dir->dir_pos = 0;
 }
+
+
+int32_t sys_rmdir(const char *pathname)
+{
+
+    path_search_record record;
+    memset(&record, 0, sizeof(path_search_record));
+    int32_t retval = -1;
+    int32_t inode_nr = search_file(pathname, &record);
+    if (inode_nr == -1)
+        retval = -1;
+    else
+    {
+        if (record.f_type == FS_FILE)
+            printk("%s is regular file!\n", pathname);
+        else
+        {
+            dir *pdir = dir_open(cur_part, inode_nr);
+            ASSERT(pdir!=NULL);
+            if (dir_is_empty(pdir))
+            {
+
+                if (dir_remove(record.parent_dir, pdir) == 0)
+                    retval = 0;
+                else
+                    printk("dir %s is not empty, it is not allowed to delete a nonempty directory!\n", pathname);
+            }
+
+            /* 书中此处用 dir_close, 但 dir_remove() 中用到了 inode_release(),
+            inode_release() 中使用了 inode_open()和 inode_close()，
+            其中 inode_open() 及 pdir 可能指向内存中同一个 inode(整个扇区全局打开的 inode) ， 
+            inode_release() 中调用 inode_close()可能提前将 pdir 的 inode 释放掉*/
+            // dir_close(pdir);
+            sys_free(pdir);
+
+        }
+    }
+
+    dir_close(record.parent_dir);
+
+    return retval;
+}

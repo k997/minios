@@ -22,7 +22,7 @@ int main(void)
    printk("/dir1 create %s!\n", sys_mkdir("/dir1") == 0 ? "done" : "fail");
    printk("/dir1/subdir1 create %s!\n", sys_mkdir("/dir1/subdir1") == 0 ? "done" : "fail");
    printk("/dir1/subdir2 create %s!\n", sys_mkdir("/dir1/subdir2") == 0 ? "done" : "fail");
-
+   printk("/dir1/subdir2 delete %s!\n", sys_rmdir("/dir1/subdir2") == 0 ? "done" : "fail");
    dir *p_dir = sys_opendir("/dir1");
    dir_entry *d_entry;
 

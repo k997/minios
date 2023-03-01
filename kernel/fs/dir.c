@@ -17,8 +17,12 @@ void open_root_dir(partition *part)
 dir *dir_open(partition *part, uint32_t inode_nr)
 {
     dir *d = (dir *)sys_malloc(sizeof(dir));
-    d->inode = inode_open(part, inode_nr);
-    d->dir_pos = 0;
+    if (d != NULL)
+    {
+        d->inode = inode_open(part, inode_nr);
+        d->dir_pos = 0;
+    }
+
     return d;
 }
 
@@ -77,6 +81,39 @@ dir_entry *dir_read(dir *dir)
     }
     return NULL;
 }
+
+// dir 是否为空
+bool dir_is_empty(dir *pdir)
+{
+    /* 若目录下只有.和..这两个目录项，则目录为空 */
+    return pdir->inode->i_size == 2 * cur_part->sb->dir_entry_size;
+}
+
+// 从父目录中删除子目录
+int32_t dir_remove(dir *parent_dir, dir *child_dir)
+{
+    /*
+    1. 删除 dir entry
+    2. 释放 inode
+     */
+    inode *child_dir_inode = child_dir->inode;
+    /* 空目录只在 inode->i_sectors[0]中有扇区，其他扇区都应该为空 */
+    uint32_t block_idx;
+    for (block_idx = 1; block_idx < 13; block_idx++)
+        ASSERT(child_dir_inode->i_blocks[block_idx] == 0);
+
+    void *io_buf = sys_malloc(BLOCK_SIZE * 2);
+    if (io_buf == NULL)
+    {
+        printk("dir_remove: malloc for io_buf failed!\n");
+        return -1;
+    }
+    delete_dir_entry(cur_part, parent_dir, child_dir_inode->i_nr, io_buf);
+    inode_release(cur_part, child_dir_inode->i_nr);
+    sys_free(io_buf);
+    return 0;
+}
+
 void create_dir_entry(char *filename, uint32_t inode_nr, FS_TYPE f_type, dir_entry *pde)
 {
     ASSERT(strlen(filename) <= MAX_FILE_NAME_LEN);
