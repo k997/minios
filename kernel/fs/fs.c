@@ -359,7 +359,7 @@ int32_t sys_rmdir(const char *pathname)
         else
         {
             dir *pdir = dir_open(cur_part, inode_nr);
-            ASSERT(pdir!=NULL);
+            ASSERT(pdir != NULL);
             if (dir_is_empty(pdir))
             {
 
@@ -370,11 +370,79 @@ int32_t sys_rmdir(const char *pathname)
             }
 
             dir_close(pdir);
-
         }
     }
 
     dir_close(record.parent_dir);
 
+    return retval;
+}
+
+// 获取当前工作目录
+char *sys_getcwd(char *buf, uint32_t size)
+{
+    ASSERT(buf != NULL);
+
+    char full_path_reverse[MAX_PATH_LEN] = {0};
+
+    uint32_t cur_inode_nr = thread_running()->cwd_inode_nr;
+    if (cur_inode_nr == 0)
+    {
+        strcpy(buf, "/");
+        return buf;
+    }
+    uint32_t parent_inode_nr;
+    dir_entry parent_dir_entry, cur_dir_entry;
+
+    while (cur_inode_nr)
+    {
+        dir *cur_dir = dir_open(cur_part, cur_inode_nr);
+        if (cur_dir == NULL)
+            return NULL;
+        // 找到当前目录父目录的inode_nr
+        if (!search_dir_entry(cur_part, cur_dir, "..", &parent_dir_entry))
+            return NULL;
+        dir_close(cur_dir);
+        parent_inode_nr = parent_dir_entry.i_nr;
+        // 在父目录中查找当前目录的目录名称
+        dir *parent_dir = dir_open(cur_part, parent_inode_nr);
+        if (parent_dir == NULL)
+            return NULL;
+        if (!search_dir_entry_by_inode(cur_part, parent_dir, cur_inode_nr, &cur_dir_entry))
+            return NULL;
+        dir_close(parent_dir);
+        // 将当前目录名称写入 path
+        strcat(full_path_reverse, "/");
+        strcat(full_path_reverse, cur_dir_entry.filename);
+
+        cur_inode_nr = parent_inode_nr;
+    }
+    ASSERT(strlen(full_path_reverse) <= size);
+    memset(buf, 0, size);
+    char *last_slash;
+    while (last_slash = strrchr(full_path_reverse, '/'))
+    {
+        uint32_t len = strlen(buf);
+        strcpy(buf + len, last_slash);
+        *last_slash = 0;
+    }
+    return buf;
+}
+
+/* 更改当前工作目录为绝对路径 path，成功则返回 0，失败返回-1 */
+int32_t sys_chdir(const char *path)
+{
+    int32_t retval = -1;
+    path_search_record record;
+    memset(&record, 0, sizeof(path_search_record));
+    int32_t i_nr = search_file(path, &record);
+    if (i_nr != -1)
+    {
+        thread_running()->cwd_inode_nr = i_nr;
+        retval = 0;
+    }
+    else
+        printk("sys_chdir: %s is regular file or other!\n", path);
+    dir_close(record.parent_dir);
     return retval;
 }

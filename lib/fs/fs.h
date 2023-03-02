@@ -129,6 +129,7 @@ bool dir_is_empty(dir *pdir);
 
 void create_dir_entry(char *filename, uint32_t inode_nr, FS_TYPE f_type, dir_entry *pde);
 bool search_dir_entry(partition *part, dir *pdir, const char *name, dir_entry *dir_e);
+bool search_dir_entry_by_inode(partition *part, dir *pdir, int inode_nr, dir_entry *dir_e);
 bool sync_dir_entry(dir *parent_dir, dir_entry *d_e, void *buf);
 bool delete_dir_entry(partition *part, dir *pdir, uint32_t inode_nr, void *buf);
 
@@ -146,5 +147,7 @@ int32_t sys_closedir(dir *d);
 dir_entry *sys_readdir(dir *dir);
 void sys_rewinddir(dir *dir);
 int32_t sys_rmdir(const char *pathname);
+int32_t sys_chdir(const char *path);
+char *sys_getcwd(char *buf, uint32_t size);
 
 #endif

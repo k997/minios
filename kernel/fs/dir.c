@@ -122,8 +122,8 @@ void create_dir_entry(char *filename, uint32_t inode_nr, FS_TYPE f_type, dir_ent
     pde->f_type = f_type;
 }
 
-// 根据文件名称查找对应的 dir entry
-bool search_dir_entry(partition *part, dir *pdir, const char *name, dir_entry *dir_e)
+typedef bool(condition)(dir_entry *, int arg);
+static bool __search_dir_entry(partition *part, dir *pdir, dir_entry *dir_e, condition condition, int arg)
 {
     /*
     1. 先读取 dir
@@ -168,9 +168,10 @@ bool search_dir_entry(partition *part, dir *pdir, const char *name, dir_entry *d
         // 读取 all_blocks[block_idx] 指向的 block
         disk_read(part->belong_to_disk, buf, all_data_blocks[block_idx], 1);
         // block 内查找 dir entry
-        for (dir_entry_idx = 0, p_de = (dir_entry *)buf; dir_entry_idx < dir_entry_cnt; dir_entry_idx++, p_de++)
+        for (dir_entry_idx = 0; dir_entry_idx < dir_entry_cnt; dir_entry_idx++)
         {
-            if (!strcmp(p_de->filename, name))
+            p_de = (dir_entry *)buf + dir_entry_idx;
+            if (condition(p_de, arg))
             {
                 memcpy(dir_e, p_de, dir_entry_size);
                 sys_free(buf);
@@ -182,6 +183,27 @@ bool search_dir_entry(partition *part, dir *pdir, const char *name, dir_entry *d
     sys_free(buf);
     sys_free(all_data_blocks);
     return false;
+}
+
+static bool __search_dir_entry_by_name(dir_entry *pde, int name)
+{
+    const char *_name = (char *)name;
+    return !strcmp(pde->filename, _name);
+}
+
+// 根据文件名称查找对应的 dir entry
+bool search_dir_entry(partition *part, dir *pdir, const char *name, dir_entry *dir_e)
+{
+    return __search_dir_entry(part, pdir, dir_e, __search_dir_entry_by_name, (int)name);
+}
+
+static bool __search_dir_entry_by_inode(dir_entry *pde, int inode_nr)
+{
+    return pde->i_nr == inode_nr;
+}
+bool search_dir_entry_by_inode(partition *part, dir *pdir, int inode_nr, dir_entry *dir_e)
+{
+    return __search_dir_entry(part, pdir, dir_e, __search_dir_entry_by_inode, inode_nr);
 }
 
 /*
