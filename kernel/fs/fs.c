@@ -1,5 +1,4 @@
 #include "fs.h"
-#include "file.h"
 #include "string.h"
 #include "kstdio.h"
 #include "debug.h"

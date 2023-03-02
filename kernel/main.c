@@ -11,7 +11,6 @@
 #include "syscall.h"
 #include "ide.h"
 #include "fs.h"
-#include "file.h"
 
 int main(void)
 {
