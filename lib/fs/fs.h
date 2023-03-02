@@ -97,6 +97,14 @@ typedef enum bitmap_type
     BLOCK_BITMAP  // 块位图
 } bitmap_type;
 
+/* 文件属性结构体 */
+typedef struct stat
+{
+    uint32_t st_i_nr;      // inode 编号
+    uint32_t st_size;      // 尺寸
+    enum FS_TYPE st_ftype; // 文件类型
+} stat;
+
 extern partition *cur_part;
 extern dir root_dir;
 
@@ -114,7 +122,6 @@ void inode_release(partition *part, uint32_t inode_nr);
 void collect_inode_datablock_lba_table(partition *part, inode *node, uint32_t *block_lba_table);
 int32_t indirect_block_alloc(partition *part, inode *node, void *io_buf);
 
-
 uint32_t data_block_lba(partition *part, uint32_t block_bitmap_idx);
 uint32_t data_block_bitmap_idx(partition *part, uint32_t lba);
 void bitmap_sync(partition *part, uint32_t idx, bitmap_type btmp_type);
@@ -123,9 +130,8 @@ void open_root_dir(partition *part);
 dir *dir_open(partition *part, uint32_t inode_nr);
 void dir_close(dir *dir);
 dir_entry *dir_read(dir *dir);
-int32_t dir_remove(dir* parent_dir,dir* child_dir);
+int32_t dir_remove(dir *parent_dir, dir *child_dir);
 bool dir_is_empty(dir *pdir);
-
 
 void create_dir_entry(char *filename, uint32_t inode_nr, FS_TYPE f_type, dir_entry *pde);
 bool search_dir_entry(partition *part, dir *pdir, const char *name, dir_entry *dir_e);
@@ -139,7 +145,7 @@ int search_file(const char *path, path_search_record *record);
 int32_t sys_open(const char *path, uint8_t flag);
 int32_t sys_close(int32_t fd);
 int32_t sys_write(int32_t fd, const void *buf, uint32_t nbytes);
-int32_t sys_read(int32_t fd,void *buf, uint32_t nbytes);
+int32_t sys_read(int32_t fd, void *buf, uint32_t nbytes);
 int32_t sys_unlink(const char *pathname);
 int32_t sys_mkdir(const char *pathname);
 dir *sys_opendir(const char *name);
@@ -149,5 +155,6 @@ void sys_rewinddir(dir *dir);
 int32_t sys_rmdir(const char *pathname);
 int32_t sys_chdir(const char *path);
 char *sys_getcwd(char *buf, uint32_t size);
+int32_t sys_stat(const char *path, stat *st);
 
 #endif

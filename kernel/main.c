@@ -20,10 +20,16 @@ int main(void)
    interrupt_enable();
    printk("/dir1 create %s!\n", sys_mkdir("/dir1") == 0 ? "done" : "fail");
    printk("/dir1/subdir1 create %s!\n", sys_mkdir("/dir1/subdir1") == 0 ? "done" : "fail");
-   sys_chdir("/dir1/subdir1");
-   char path[MAX_PATH_LEN];
-   
-   printk("cwd: %s\n",sys_getcwd(path, MAX_PATH_LEN));
+
+   char path[] = "/dir1/subdir1";
+   stat st;
+   sys_stat(path, &st);
+   printk("%s stat: inode nr %d, file size %d", path, st.st_i_nr, st.st_size);
+   if (st.st_ftype == FS_DIRECTORY)
+      printk(",file type: dir");
+   else
+      printk(",file type: file");
+
    while (1)
       ;
    return 0;

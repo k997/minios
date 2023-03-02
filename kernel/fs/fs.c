@@ -292,7 +292,6 @@ rollback:
     return -1;
 }
 
-
 // 打开 dir ，成功返回 dir* ，失败返回 NULL
 dir *sys_opendir(const char *name)
 {
@@ -341,7 +340,6 @@ void sys_rewinddir(dir *dir)
 {
     dir->dir_pos = 0;
 }
-
 
 int32_t sys_rmdir(const char *pathname)
 {
@@ -443,6 +441,37 @@ int32_t sys_chdir(const char *path)
     }
     else
         printk("sys_chdir: %s is regular file or other!\n", path);
+    dir_close(record.parent_dir);
+    return retval;
+}
+
+ /*查看文件结构相关信息，成功时返回 0，失败返回-1 */ 
+int32_t sys_stat(const char *path, stat *st)
+{
+    if (!strcmp(path, "/") || !strcmp(path, "/.") || !strcmp(path, "/.."))
+    {
+        st->st_i_nr = root_dir.inode->i_nr;
+        st->st_size = root_dir.inode->i_size;
+        st->st_ftype = FS_DIRECTORY;
+        return 0;
+    }
+
+    int32_t retval = -1;
+    path_search_record record;
+    memset(&record, 0, sizeof(path_search_record));
+
+    int32_t inode_nr = search_file(path, &record);
+    if (inode_nr != -1)
+    {
+        inode *_node = inode_open(cur_part, inode_nr);
+        st->st_size = _node->i_size;
+        inode_close(_node);
+        st->st_ftype = record.f_type;
+        st->st_i_nr = inode_nr;
+        retval = 0;
+    }
+    else
+        printk("sys_stat: %s not found\n", path);
     dir_close(record.parent_dir);
     return retval;
 }
