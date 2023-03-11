@@ -188,7 +188,10 @@ static void make_main_thread(char *name, int priority)
     main_thread->elapsed_ticks = 0;
     main_thread->pgdir = NULL;
     main_thread->stack_magic = THREAD_STACK_MAGIC_NUM;
-
+    /* 预留标准输入输出*/
+    main_thread->fd_table[0] = 0;
+    main_thread->fd_table[1] = 1;
+    main_thread->fd_table[2] = 2;
     ASSERT(!list_find_elem(&thread_all_list, &main_thread->thread_all_list_tag));
     list_append(&thread_all_list, &main_thread->thread_all_list_tag);
 }
