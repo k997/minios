@@ -11,25 +11,25 @@
 #include "syscall.h"
 #include "ide.h"
 #include "fs.h"
+void print_pid();
 
 int main(void)
 {
    printk("I am kernel\n");
    init_all();
+
    interrupt_enable();
-   printk("/dir1 create %s!\n", sys_mkdir("/dir1") == 0 ? "done" : "fail");
-   printk("/dir1/subdir1 create %s!\n", sys_mkdir("/dir1/subdir1") == 0 ? "done" : "fail");
-
-   char path[] = "/dir1/subdir1";
-   stat st;
-   sys_stat(path, &st);
-   printk("%s stat: inode nr %d, file size %d", path, st.st_i_nr, st.st_size);
-   if (st.st_ftype == FS_DIRECTORY)
-      printk(",file type: dir");
-   else
-      printk(",file type: file");
-
+   printk("main thread pid is %d\n", sys_getpid());
+   task_struct *task = process_create("pid", print_pid);
+   process_start(task);
    while (1)
       ;
    return 0;
+}
+void print_pid()
+{
+   printf("user prog pid is %d\n", getpid());
+   
+   while (1)
+      ;
 }

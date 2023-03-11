@@ -5,21 +5,26 @@
 #include "interrupt.h"
 #include "debug.h"
 #include "process.h"
+#include "sync.h"
 
 task_struct *main_thread; // 主线程 PCB
 task_struct *idle_thread; // 系统无任务时时运行的线程
 list thread_ready_list;
 list thread_all_list;
+lock pid_lock;
+
 static void make_main_thread(char *name, int priority);
 static void kernel_thread(thread_func *func, void *func_args);
 static void thread_kstack(task_struct *thread, thread_func func, void *func_args);
 static void idle(void *args);
+static pid_t pid_alloc();
 
 // 线程模块初始化
 void thread_init(void)
 {
     list_init(&thread_ready_list);
     list_init(&thread_all_list);
+    lock_init(&pid_lock);
     // main 线程的 PCB 空间已在 0xc009e000 提前分配好，无需再次分配空间, 且此时其已经是运行状态，因此单独为 main 线程创建 PCB
     make_main_thread("main", 31);
     idle_thread = thread_create("idle", 10, idle, NULL);
@@ -48,7 +53,7 @@ task_struct *thread_create(char *name, int priority, thread_func func, void *fun
     {
         thread->fd_table[-1];
     }
-
+    thread->pid = pid_alloc();
     thread->stack_magic = THREAD_STACK_MAGIC_NUM;
 
     // thread_kstack 预留中断栈及内核栈的栈空间
@@ -192,6 +197,7 @@ static void make_main_thread(char *name, int priority)
     main_thread->fd_table[0] = 0;
     main_thread->fd_table[1] = 1;
     main_thread->fd_table[2] = 2;
+    main_thread->pid = pid_alloc();
     ASSERT(!list_find_elem(&thread_all_list, &main_thread->thread_all_list_tag));
     list_append(&thread_all_list, &main_thread->thread_all_list_tag);
 }
@@ -207,4 +213,20 @@ static void idle(void *args)
         asm volatile("sti;hlt" ::/* 运行 hlt 必须在开中断 sti 情况下运行 */
                      : "memory");
     }
+}
+
+/* 返回当前任务的 pid */
+int32_t sys_getpid(void)
+{
+    return thread_running()->pid;
+}
+
+static pid_t pid_alloc()
+{
+    // 静态存储，相当于不可见的全局变量, 只会在程序第一次运行时完成唯一一次初始化
+    static pid_t next_pid = 0;
+    lock_acquire(&pid_lock);
+    next_pid++;
+    lock_release(&pid_lock);
+    return next_pid;
 }

@@ -10,6 +10,7 @@
 
 // 自定义通用函数类型,在多线程函数中作为形参
 typedef void thread_func(void *);
+typedef int32_t pid_t;
 
 typedef enum task_status
 {
@@ -99,14 +100,15 @@ typedef struct task_struct
     list_elem thread_status_list_tag; // 线程状态队列的节点
     list_elem thread_all_list_tag;    // 全部线程队列的节点
 
-    uint32_t *pgdir;      /* 进程页表地址, 若是线程则为 NULL
-                   页目录项和 uint32_t 都是四字节, 方便操作页表*/
-    pool vaddr;           /* 标记内存映射情况 */
-    mem_bin mb[BIN_CNT];  // 用户进程内存块描述符
+    uint32_t *pgdir;                           /* 进程页表地址, 若是线程则为 NULL
+                                        页目录项和 uint32_t 都是四字节, 方便操作页表*/
+    pool vaddr;                                /* 标记内存映射情况 */
+    mem_bin mb[BIN_CNT];                       // 用户进程内存块描述符
     int32_t fd_table[MAX_FILES_OPEN_PER_PROC]; // 文件描述符数组
-    uint32_t cwd_inode_nr;// 进程所在的工作目录的 inode 编号
-    uint32_t stack_magic; // PCB 的边界标记,用于检测栈的溢出, 防止栈内容覆盖 PCB 其他信息
-                          // 该值为自定义的 magic number, 若 PCB 边界等于该值, 则说明 PCB 数据没有被栈覆盖
+    uint32_t cwd_inode_nr;                     // 进程所在的工作目录的 inode 编号
+    pid_t pid;                                 // 进程 id
+    uint32_t stack_magic;                      // PCB 的边界标记,用于检测栈的溢出, 防止栈内容覆盖 PCB 其他信息
+                                               // 该值为自定义的 magic number, 若 PCB 边界等于该值, 则说明 PCB 数据没有被栈覆盖
 } task_struct;
 
 // 线程模块初始化
@@ -125,5 +127,7 @@ void thread_block(task_status stat);
 void thread_unblock(task_struct *pthread);
 // 线程主动让出处理器
 void thread_yield(void);
+// 返回当前任务 pid
+pid_t sys_getpid(void);
 
 #endif

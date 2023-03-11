@@ -9,7 +9,8 @@ typedef enum SYSCALL_NR
 {
     SYS_WRITE,
     SYS_MALLOC,
-    SYS_FREE
+    SYS_FREE,
+    SYS_PID
 } SYSCALL_NR;
 typedef void *syscall;
 
@@ -60,6 +61,7 @@ typedef void *syscall;
 uint32_t write(int32_t fd, void *buf, uint32_t nbytes);
 void free(void *ptr);
 void *malloc(uint32_t size);
+int32_t getpid();
 void syscall_init();
 void syscall_register(SYSCALL_NR _syscall_nr, syscall _syscall_func);
 

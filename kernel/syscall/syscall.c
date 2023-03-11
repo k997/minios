@@ -6,7 +6,7 @@
 #include "idt.h"
 #include "memory.h"
 #include "fs.h"
-
+#include "thread.h"
 
 extern uint32_t syscall_handler(void);
 syscall syscall_table[SYSCALL_TOTAL_NR];
@@ -22,6 +22,7 @@ void syscall_init()
     syscall_register(SYS_WRITE, sys_write);
     syscall_register(SYS_MALLOC, sys_malloc);
     syscall_register(SYS_FREE, sys_free);
+    syscall_register(SYS_PID, sys_getpid);
 }
 
 // 系统调用注册函数
@@ -45,4 +46,9 @@ void free(void *ptr)
 void *malloc(uint32_t size)
 {
     return (void *)_syscall_1(SYS_MALLOC, size);
+}
+
+int32_t getpid()
+{
+    return _syscall_0(SYS_PID);
 }
