@@ -1,20 +1,24 @@
-TOP_DIR := $(shell pwd)
+TOP_DIR = $(shell pwd)
+
 BOCHS_DIR = $(TOP_DIR)
+BOCHS_DISK = $(BOCHS_DIR)/os.img
+
 BUILD_DIR = $(TOP_DIR)/build
-BOOTLOADER_DIR = $(TOP_DIR)/boot
-KERNEL_DIR = $(TOP_DIR)/kernel
+
+SOURCE_DIR = $(TOP_DIR)/src
+BOOTLOADER_DIR = $(SOURCE_DIR)/boot
+KERNEL_DIR = $(SOURCE_DIR)/kernel
 
 SUB_DIR = $(BOOTLOADER_DIR) $(KERNEL_DIR) 
 
 
-BOCHS_DISK = $(BOCHS_DIR)/os.img
 
 AS = yasm
 CC = gcc
 LD = ld
 
 
-export CC AS TOP_DIR BUILD_DIR KERNEL_DIR
+export CC AS SOURCE_DIR BUILD_DIR KERNEL_DIR
 
 .PHONY : mk_dir hd clean build all run
 
