@@ -134,16 +134,16 @@ static void init_superblock_for_raw_partition(superblock *sb, const partition *p
 
     printk("%s info:\n", part->name);
     printk(" magic:0x%x\n"
-           "part_lba_base:0x%x\n"
-           "all_sectors : 0x%x\n"
-           "inode_cnt : 0x%x\n"
-           "block_bitmap_lba : 0x%x\n"
-           "block_bitmap_sectors : 0x%x\n"
-           "inode_bitmap_lba : 0x%x\n"
-           "inode_bitmap_sectors : 0x%x\n"
-           "inode_table_lba : 0x %x\n"
-           "inode_table_sectors : 0x%x\n"
-           "data_start_lba : 0x%x\n",
+           " part_lba_base:0x%x\n"
+           " all_sectors : 0x%x\n"
+           " inode_cnt : 0x%x\n"
+           " block_bitmap_lba : 0x%x\n"
+           " block_bitmap_sectors : 0x%x\n"
+           " inode_bitmap_lba : 0x%x\n"
+           " inode_bitmap_sectors : 0x%x\n"
+           " inode_table_lba : 0x %x\n"
+           " inode_table_sectors : 0x%x\n"
+           " data_start_lba : 0x%x\n",
            sb->magic,
            sb->part_lba_base, sb->sec_cnt, sb->inode_cnt,
            sb->block_bitmap_lba, sb->block_bitmap_block_cnt, sb->inode_bitmap_lba,
